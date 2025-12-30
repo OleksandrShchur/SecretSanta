@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="uk">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Таємний Санта</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" href="favicon.png" type="image/png">
+</head>
+
+<body>
+    <div class="snow"></div>
+
+    <header class="christmas-header">
+        <img src="tree.svg" class="tree left" alt="">
+        <h1>Організатор Таємного Санти</h1>
+        <img src="tree.svg" class="tree right" alt="">
+    </header>
+
+    <div id="add-participant">
+        <input type="text" id="name-input" placeholder="Ім'я учасника" autofocus>
+        <button id="add-btn">Додати учасника</button>
+    </div>
+
+    <div id="participants-list">
+        <h2>Учасники:</h2>
+        <ul id="participants-ul"></ul>
+    </div>
+
+    <div id="restrictions-section">
+        <h2>Обмеження:</h2>
+        <p>
+            Для кожного учасника оберіть, кому він НЕ МОЖЕ дарувати подарунок.
+            Обмеження взаємні за замовчуванням.
+        </p>
+        <div id="restrictions-div"></div>
+    </div>
+
+    <div id="mode-section">
+        <h2>Режим жеребкування:</h2>
+        <div>
+            <input type="radio" name="mode" value="with">
+            Жеребкування з обмеженнями
+        </div>
+
+        <div>
+            <input type="radio" name="mode" value="without" checked>
+            Жеребкування без обмежень
+        </div>
+    </div>
+
+    <div id="generate-section">
+        <button id="generate-btn">Згенерувати жеребкування</button>
+    </div>
+
+    <div id="results-section">
+        <h2>Результати:</h2>
+        <ul id="results-ul"></ul>
+        <div class="results-actions">
+            <button id="regen-btn">Нова генерація</button>
+            <button id="reset-btn">Очистити все</button>
+        </div>
+    </div>
+
+    <div id="popup-overlay" class="popup-overlay">
+        <div class="popup">
+            <p id="popup-message"></p>
+            <button id="popup-close">OK</button>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>
