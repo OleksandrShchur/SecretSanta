@@ -1,0 +1,301 @@
+/* =========================
+   Base layout & typography
+   ========================= */
+
+body {
+    font-family: Arial, sans-serif;
+    color: #333;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+
+    background:
+        radial-gradient(circle at top, #f8f1f1, #eafaea 70%);
+    position: relative;
+}
+
+/* =========================
+   Christmas lights (top garland)
+   ========================= */
+
+body::after {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 100%;
+    pointer-events: none;
+    z-index: -1;
+
+    background-image:
+        radial-gradient(circle at 20px 40px, #ff3b3b 6px, transparent 7px),
+        radial-gradient(circle at 60px 30px, #ffd93b 6px, transparent 7px),
+        radial-gradient(circle at 100px 45px, #3bff6a 6px, transparent 7px),
+        radial-gradient(circle at 140px 35px, #3bc7ff 6px, transparent 7px);
+
+    background-size: 160px 180px;
+    background-repeat: repeat-x;
+
+    animation: lights-blink 3s infinite alternate;
+}
+
+@keyframes lights-blink {
+    0% {
+        opacity: 0.9;
+    }
+
+    50% {
+        opacity: 0.6;
+    }
+
+    100% {
+        opacity: 1;
+    }
+}
+
+/* =========================
+   Background snow (ambient)
+   ========================= */
+
+body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: -2;
+    opacity: 0.5;
+
+    background-image:
+        radial-gradient(rgb(101, 154, 245) 1.5px, transparent 1.5px),
+        radial-gradient(rgb(101, 154, 245) 1px, transparent 1px),
+        radial-gradient(rgb(101, 154, 245) 0.8px, transparent 0.8px);
+
+    background-size:
+        120px 120px,
+        180px 180px,
+        250px 250px;
+
+    animation: snow-fall 25s linear infinite;
+}
+
+@keyframes snow-fall {
+    from {
+        background-position: 0 0, 0 0, 0 0;
+    }
+
+    to {
+        background-position: 0 1200px, 0 900px, 0 600px;
+    }
+}
+
+/* =========================
+   Headings
+   ========================= */
+
+h1 {
+    color: #b30000;
+    text-align: center;
+    letter-spacing: 1px;
+    border-bottom: 2px solid #d4af37;
+}
+
+h2 {
+    color: #006400;
+}
+
+/* =========================
+   Christmas header
+   ========================= */
+
+.christmas-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+}
+
+.tree {
+    width: 50px;
+}
+
+.tree.left {
+    transform: scaleX(-1);
+}
+
+/* =========================
+   Inputs & buttons
+   ========================= */
+
+input[type="text"] {
+    padding: 10px;
+    width: 300px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+button {
+    background-color: #c00;
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+    border-radius: 4px;
+    margin-left: 10px;
+}
+
+button:hover {
+    background-color: #a00;
+}
+
+/* =========================
+   Lists & cards
+   ========================= */
+
+ul {
+    list-style: none;
+    padding: 0;
+}
+
+li {
+    background-color: #f8f8f8;
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 4px;
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    border-left: 6px solid #006400;
+}
+
+li button {
+    background-color: #006400;
+    padding: 5px 10px;
+}
+
+li button:hover {
+    background-color: #004d00;
+}
+
+/* =========================
+   Sections visibility
+   ========================= */
+
+#restrictions-section,
+#mode-section,
+#generate-section,
+#results-section {
+    display: none;
+    margin-top: 20px;
+}
+
+#restrictions-section p {
+    font-weight: bold;
+    color: #006400;
+}
+
+#restrictions-section label {
+    margin-right: 15px;
+    display: inline-block;
+}
+
+#results-ul li {
+    font-size: 1.1em;
+}
+
+.results-actions {
+    margin-top: 20px;
+}
+
+/* =========================
+   Responsive adjustments
+   ========================= */
+
+@media (max-width: 600px) {
+    body {
+        padding: 10px;
+    }
+
+    body::after {
+        height: 50px;
+        background-size: 120px 50px;
+    }
+
+    .tree {
+        display: none;
+    }
+
+    .christmas-header {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    h1 {
+        font-size: 1.6em;
+    }
+
+    input[type="text"] {
+        width: 95%;
+        margin-bottom: 10px;
+    }
+
+    button {
+        width: 100%;
+        margin-left: 0;
+        margin-top: 5px;
+    }
+
+    li {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    li button {
+        width: 100%;
+        margin-top: 10px;
+    }
+
+    #mode-section label {
+        display: block;
+        margin-bottom: 10px;
+    }
+}
+
+/* =========================
+   Popup modal
+   ========================= */
+
+.popup-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.popup {
+    background: #fff;
+    padding: 20px 25px;
+    border-radius: 8px;
+    max-width: 300px;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.popup p {
+    margin-bottom: 20px;
+    font-weight: bold;
+    color: #b30000;
+}
+
+.popup button {
+    width: 100%;
+}
+
+.popup button {
+    margin-left: 0px;
+}
