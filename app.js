@@ -37,9 +37,15 @@ nameInput.addEventListener('keyup', e => {
 
 function addParticipant() {
     const name = nameInput.value.trim();
-    if (!name || participants.includes(name)) 
+
+    if (!name) {
+        showPopup('Імʼя учасника не може бути порожнім!');
+        return;
+    }
+
+    if (participants.includes(name)) 
     {
-        showPopup('Учасник з таким імʼям вже існує');
+        showPopup('Учасник з таким імʼям вже існує!');
         return;
     }
 
