@@ -172,11 +172,11 @@ function generateAssignment() {
         let msg = 'Неможливо згенерувати жеребкування через обмеження:\n';
         if (noReceiver.length > 0) {
             const names = noReceiver.join(', ');
-            msg += `Ніхто не може дарувати подарунок${noReceiver.length > 1 ? 'и' : ''} ${names}.\n`;
+            msg += `Залишаться без подарунків: ${names}.\n`;
         }
         if (noGiver.length > 0) {
             const names = noGiver.join(', ');
-            msg += `${names} не може${noGiver.length > 1 ? 'ть' : ''} дарувати подарунок нікому.\n`;
+            msg += `Не дарують подарунок нікому: ${names} \n`;
         }
         msg += '\nЗмініть деякі обмеження.';
         showPopup(msg);
