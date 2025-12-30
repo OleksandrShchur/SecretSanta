@@ -99,7 +99,7 @@ function updateRestrictionsUI() {
             cb.checked = restrictions[i][j];
             cb.onchange = () => {
                 restrictions[i][j] = cb.checked;
-                if (cb.checked) restrictions[j][i] = true;
+                // Видалено примусову симетрію — тепер обмеження незалежні (асиметричні)
                 updateRestrictionsUI();
             };
 
@@ -125,7 +125,7 @@ function updateMode() {
 function checkMinParticipants() {
     const count = participants.length;
 
-    modeSection.style.display = count >= 2 ? 'block' : 'none';
+    modeSection.style.display = count >= 3 ? 'block' : 'none';
     generateSection.style.display = count >= 3 ? 'block' : 'none';
 
     if (count < 3) {
@@ -147,12 +147,56 @@ function generateAssignment() {
         )
     );
 
+    // === НОВА ЛОГІКА: перевірка очевидних неможливих ситуацій ===
+    const inDegrees = Array(n).fill(0);
+    const outDegrees = Array(n).fill(0);
+
+    for (let i = 0; i < n; i++) {
+        for (let j = 0; j < n; j++) {
+            if (graph[i][j]) {
+                outDegrees[i]++;
+                inDegrees[j]++;
+            }
+        }
+    }
+
+    const noReceiver = [];
+    const noGiver = [];
+
+    for (let i = 0; i < n; i++) {
+        if (inDegrees[i] === 0) noReceiver.push(participants[i]);
+        if (outDegrees[i] === 0) noGiver.push(participants[i]);
+    }
+
+    if (noReceiver.length > 0 || noGiver.length > 0) {
+        let msg = 'Неможливо згенерувати жеребкування через обмеження:\n';
+        if (noReceiver.length > 0) {
+            const names = noReceiver.join(', ');
+            msg += `Ніхто не може дарувати подарунок${noReceiver.length > 1 ? 'и' : ''} ${names}\n`;
+        }
+        if (noGiver.length > 0) {
+            const names = noGiver.join(', ');
+            msg += `${names} не може${noGiver.length > 1 ? 'ть' : ''} дарувати подарунок нікому.\n`;
+        }
+        msg += '\nЗмініть деякі обмеження.';
+        showPopup(msg);
+        return;
+    }
+    // === КІНЕЦЬ НОВОЇ ЛОГІКИ ===
+
     const path = findRandomHamiltonianCycle(graph, n);
-    if (!path) return;
+    if (!path) {
+        showPopup('Неможливо знайти валідне жеребкування з поточними обмеженнями. Обмеження надто суворі — спробуйте послабити їх.');
+        return;
+    }
+
+    // Рандомізація порядку виведення (початок списку з випадкового учасника)
+    const rot = Math.floor(Math.random() * n);
+    const rotatedPath = path.slice(rot).concat(path.slice(0, rot));
 
     resultsUl.innerHTML = '';
-    path.forEach((giver, i) => {
-        const receiver = path[(i + 1) % n];
+    rotatedPath.forEach((giver, i) => {
+        const receiver = rotatedPath[(i + 1) % n];
         const li = document.createElement('li');
         li.textContent = `${participants[giver]} → дарує подарунок → ${participants[receiver]}`;
         resultsUl.appendChild(li);
@@ -206,6 +250,6 @@ function hamiltonianUtil(graph, path, visited, n) {
 function shuffle(arr) {
     for (let i = arr.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
-        [arr[i], arr[j]] = [arr[j], arr[i]];
+        [arr[i], arr[j] = arr[j], arr[i]];
     }
 }
