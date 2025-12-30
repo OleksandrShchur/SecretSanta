@@ -26,9 +26,9 @@ https://oleksandrshchur.github.io/SecretSanta/
 
 ## Project Structure
 
-├── index.html # Main entry point
-├── styles.css # Styles
-├── app.js # Application logic
+- index.html # Main entry point
+- styles.css # Styles
+- app.js # Application logic
 
 
 ## How It Works
