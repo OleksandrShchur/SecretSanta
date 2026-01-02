@@ -23,7 +23,8 @@ const popupClose = document.getElementById('popup-close');
 popupClose.onclick = () => popupOverlay.style.display = 'none';
 
 function showPopup(message) {
-    popupMessage.textContent = message;
+    // Додаємо <br> для перенесення рядків
+    popupMessage.innerHTML = message.replace(/\n/g, '<br>');
     popupOverlay.style.display = 'flex';
 }
 
@@ -35,6 +36,36 @@ nameInput.addEventListener('keyup', e => {
     if (e.key === 'Enter') addParticipant();
 });
 
+// === ФУНКЦІЇ ЗБЕРЕЖЕННЯ/ЗАВАНТАЖЕННЯ ===
+function saveToStorage() {
+    localStorage.setItem('secretSantaParticipants', JSON.stringify(participants));
+    localStorage.setItem('secretSantaRestrictions', JSON.stringify(restrictions));
+    const mode = document.querySelector('input[name="mode"]:checked')?.value || 'without';
+    localStorage.setItem('secretSantaMode', mode);
+}
+
+function loadFromStorage() {
+    const savedParticipants = localStorage.getItem('secretSantaParticipants');
+    if (savedParticipants) {
+        participants = JSON.parse(savedParticipants);
+
+        const savedRestrictions = localStorage.getItem('secretSantaRestrictions');
+        if (savedRestrictions) {
+            restrictions = JSON.parse(savedRestrictions);
+        } else {
+            const n = participants.length;
+            restrictions = Array.from({length: n}, () => Array(n).fill(false));
+        }
+
+        // Перевірка розміру матриці на всяк випадок
+        const n = participants.length;
+        if (restrictions.length !== n || restrictions.some(row => row.length !== n)) {
+            restrictions = Array.from({length: n}, () => Array(n).fill(false));
+        }
+    }
+}
+
+// === ОСНОВНІ ФУНКЦІЇ ===
 function addParticipant() {
     const name = nameInput.value.trim();
 
@@ -58,6 +89,7 @@ function addParticipant() {
     updateParticipantsList();
     updateRestrictionsUI();
     checkMinParticipants();
+    saveToStorage(); // Зберігаємо
 }
 
 function removeParticipant(index) {
@@ -68,6 +100,7 @@ function removeParticipant(index) {
     updateParticipantsList();
     updateRestrictionsUI();
     checkMinParticipants();
+    saveToStorage(); // Зберігаємо
 }
 
 function updateParticipantsList() {
@@ -105,7 +138,7 @@ function updateRestrictionsUI() {
             cb.checked = restrictions[i][j];
             cb.onchange = () => {
                 restrictions[i][j] = cb.checked;
-                // Видалено примусову симетрію — тепер обмеження незалежні (асиметричні)
+                saveToStorage(); // Зберігаємо після зміни
                 updateRestrictionsUI();
             };
 
@@ -120,12 +153,16 @@ function updateRestrictionsUI() {
 }
 
 function updateMode() {
-    const mode = document.querySelector('input[name="mode"]:checked')?.value;
+    const mode = document.querySelector('input[name="mode"]:checked')?.value || 'without';
 
-    restrictionsSection.style.display =
-        mode === 'with' && participants.length >= 2
-            ? 'block'
-            : 'none';
+    const showRestrictions = mode === 'with' && participants.length >= 2;
+    restrictionsSection.style.display = showRestrictions ? 'block' : 'none';
+
+    if (showRestrictions) {
+        updateRestrictionsUI(); // Оновлюємо при показі
+    }
+
+    saveToStorage(); // Зберігаємо вибраний режим
 }
 
 function checkMinParticipants() {
@@ -153,7 +190,7 @@ function generateAssignment() {
         )
     );
 
-    // === НОВА ЛОГІКА: перевірка очевидних неможливих ситуацій ===
+    // === Перевірка неможливих ситуацій ===
     const inDegrees = Array(n).fill(0);
     const outDegrees = Array(n).fill(0);
 
@@ -182,13 +219,13 @@ function generateAssignment() {
         }
         if (noGiver.length > 0) {
             const names = noGiver.join(', ');
-            msg += `Не дарують подарунок нікому: ${names} \n`;
+            msg += `Не дарують подарунок нікому: ${names}`;
         }
         msg += '\nЗмініть деякі обмеження.';
         showPopup(msg);
         return;
     }
-    // === КІНЕЦЬ НОВОЇ ЛОГІКИ ===
+    // === КІНЕЦЬ ПЕРЕВІРКИ ===
 
     const path = findRandomHamiltonianCycle(graph, n);
     if (!path) {
@@ -196,7 +233,6 @@ function generateAssignment() {
         return;
     }
 
-    // Рандомізація порядку виведення (початок списку з випадкового учасника)
     const rot = Math.floor(Math.random() * n);
     const rotatedPath = path.slice(rot).concat(path.slice(0, rot));
 
@@ -219,6 +255,10 @@ function resetAll() {
     resultsUl.innerHTML = '';
     resultsSection.style.display = 'none';
     checkMinParticipants();
+
+    localStorage.removeItem('secretSantaParticipants');
+    localStorage.removeItem('secretSantaRestrictions');
+    localStorage.removeItem('secretSantaMode');
 }
 
 function findRandomHamiltonianCycle(graph, n) {
@@ -256,6 +296,22 @@ function hamiltonianUtil(graph, path, visited, n) {
 function shuffle(arr) {
     for (let i = arr.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
-        [arr[i], arr[j] = arr[j], arr[i]];
+        [arr[i], arr[j]] = [arr[j], arr[i]];
     }
 }
+
+// === ІНІЦІАЛІЗАЦІЯ ПРИ ЗАВАНТАЖЕННІ СТОРІНКИ ===
+loadFromStorage();
+
+// Відновлюємо збережений режим (якщо є)
+const savedMode = localStorage.getItem('secretSantaMode');
+if (savedMode) {
+    const radio = document.querySelector(`input[name="mode"][value="${savedMode}"]`);
+    if (radio) radio.checked = true;
+}
+
+// Оновлюємо інтерфейс
+updateParticipantsList();
+updateRestrictionsUI();
+checkMinParticipants();
+updateMode();
