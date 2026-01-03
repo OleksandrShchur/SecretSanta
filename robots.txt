@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://perfect-secret-santa.netlify.app/sitemap.xml
