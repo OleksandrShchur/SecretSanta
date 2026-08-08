@@ -16,67 +16,77 @@
 </head>
 
 <body>
-    <div class="snow"></div>
+    <div class="snow" aria-hidden="true"></div>
 
     <header class="christmas-header">
-        <img src="tree.svg" class="tree left" alt="">
+        <img src="tree.svg" class="tree left" alt="" aria-hidden="true">
         <h1>Організатор Таємного Санти</h1>
-        <img src="tree.svg" class="tree right" alt="">
+        <img src="tree.svg" class="tree right" alt="" aria-hidden="true">
     </header>
 
-    <div id="add-participant">
-        <input type="text" id="name-input" placeholder="Ім'я учасника" autofocus>
-        <button id="add-btn">Додати учасника</button>
-    </div>
+    <main class="app">
+        <section class="add-participant" aria-labelledby="add-heading">
+            <h2 id="add-heading" class="visually-hidden">Додати учасника</h2>
+            <form id="add-form" class="add-form">
+                <label class="visually-hidden" for="name-input">Ім'я учасника</label>
+                <input type="text" id="name-input" name="name" placeholder="Ім'я учасника" autocomplete="off" autofocus>
+                <button type="submit" id="add-btn">Додати учасника</button>
+            </form>
+        </section>
 
-    <div id="participants-list">
-        <h2>Учасники:</h2>
-        <ul id="participants-ul"></ul>
-    </div>
+        <section id="participants-list" class="participants" aria-labelledby="participants-heading">
+            <h2 id="participants-heading">Учасники:</h2>
+            <ul id="participants-ul"></ul>
+        </section>
 
-    <div id="restrictions-section">
-        <h2>Обмеження:</h2>
-        <p>
-            Для кожного учасника оберіть, кому він НЕ МОЖЕ дарувати подарунок.
-            Обмеження взаємні за замовчуванням.
-        </p>
-        <div id="restrictions-div"></div>
-    </div>
+        <section id="mode-section" class="mode is-hidden" aria-labelledby="mode-heading">
+            <h2 id="mode-heading">Режим жеребкування:</h2>
+            <div class="mode-options">
+                <label for="mode-with">
+                    <input type="radio" name="mode" id="mode-with" value="with">
+                    Жеребкування з обмеженнями
+                </label>
+                <label for="mode-without">
+                    <input type="radio" name="mode" id="mode-without" value="without" checked>
+                    Жеребкування без обмежень
+                </label>
+            </div>
+        </section>
 
-    <div id="mode-section">
-        <h2>Режим жеребкування:</h2>
-        <div>
-            <input type="radio" name="mode" value="with">
-            Жеребкування з обмеженнями
-        </div>
+        <section id="restrictions-section" class="restrictions is-hidden" aria-labelledby="restrictions-heading">
+            <h2 id="restrictions-heading">Обмеження:</h2>
+            <p>
+                Для кожного учасника оберіть, кому він НЕ МОЖЕ дарувати подарунок.
+                Обмеження взаємні за замовчуванням.
+            </p>
+            <div id="restrictions-div"></div>
+        </section>
 
-        <div>
-            <input type="radio" name="mode" value="without" checked>
-            Жеребкування без обмежень
-        </div>
-    </div>
+        <section id="generate-section" class="generate is-hidden">
+            <button type="button" id="generate-btn">Згенерувати жеребкування</button>
+        </section>
 
-    <div id="generate-section">
-        <button id="generate-btn">Згенерувати жеребкування</button>
-    </div>
+        <section id="results-section" class="results is-hidden" aria-labelledby="results-heading">
+            <h2 id="results-heading">Результати:</h2>
+            <ul id="results-ul"></ul>
+            <div class="results-actions">
+                <button type="button" id="regen-btn">Нова генерація</button>
+                <button type="button" id="reset-btn">Очистити все</button>
+            </div>
+        </section>
+    </main>
 
-    <div id="results-section">
-        <h2>Результати:</h2>
-        <ul id="results-ul"></ul>
-        <div class="results-actions">
-            <button id="regen-btn">Нова генерація</button>
-            <button id="reset-btn">Очистити все</button>
-        </div>
-    </div>
-
-    <div id="popup-overlay" class="popup-overlay">
+    <div id="popup-overlay" class="popup-overlay is-hidden" role="dialog" aria-modal="true" aria-labelledby="popup-message">
         <div class="popup">
             <p id="popup-message"></p>
-            <button id="popup-close">OK</button>
+            <button type="button" id="popup-close">OK</button>
         </div>
     </div>
 
-    <script src="app.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/algorithm.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/app.js"></script>
 </body>
 
 </html>
