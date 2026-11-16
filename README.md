@@ -1,63 +1,90 @@
 # Secret Santa 🎅
-**A simple, client-side Secret Santa generator** that randomly assigns gift recipients with no self-assignments and a single closed loop. Runs entirely in the browser—no backend, no data stored on a server.
 
-The project allows participants to be randomly assigned a recipient while ensuring each person both gives and receives exactly one gift.
+Повноцінний сучасний веб-застосунок для організації та проведення розіграшу **«Таємний Санта»** на сучасному стеку:
+- **Бекенд**: **.NET 10 (ASP.NET Core Web API)**
+- **База даних**: **SQL Server** (LocalDB для локальної розробки, MonsterASP MSSQL для хостингу)
+- **Фронтенд**: **React + TypeScript + Vite** із сучасними компонентами та іконками **Lucide**
+- **Email-розсилка**: **Resend API** або вбудований симулятор (mock) для тестування
 
-## Live Demo
+---
 
-The application is available online via GitHub Pages:
+## 🌟 Можливості
 
-    https://oleksandrshchur.github.io/SecretSanta/
+1. **Два режими роботи**:
+   - 🎲 **Швидке жеребкування на місці (Офлайн)**: миттєвий локальний розподіл подарунків прямо у браузері без збереження на сервері.
+   - 🏠 **Онлайн-кімната з розсилкою (Онлайн)**: створення кімнати, запрошення друзів/колег за посиланням або через email, збір даних (ім'я, прізвище, email, побажання), панель організатора з лічильником та розумним оновленням у реальному часі, матриця обмежень і конфіденційне жеребкування з розсилкою листів на email.
 
-## Features
+2. **Організатор (Хост)**:
+   - Може вказати власні ім'я, прізвище, email та **побажання до подарунка** під час створення кімнати.
+   - Отримує унікальне секретне адмін-посилання (`?room=<id>&admin=<token>`) для керування без потреби паролів чи реєстрації.
+   - Бачить кількість зареєстрованих учасників та їхній список у реальному часі.
+   - Може видаляти учасників або налаштовувати взаємні та індивідуальні обмеження (хто кому не може дарувати).
+   - Запускає жеребкування однією кнопкою після збору мінімум 3 учасників.
 
-- Random Secret Santa assignment
-- No self-assignment
-- Optional pair restrictions
-- Deterministic, transparent logic
-- Client-side only (localStorage for draft state)
-- Works directly in the browser
+3. **Гарантія повної таємниці**:
+   - Алгоритм пошуку гамільтонового циклу виконується на сервері.
+   - Ніхто (навіть організатор) не бачить пари у браузері — кожен учасник отримує тільки свого підопічного у святковому листі на пошту.
 
-## Tech Stack
+4. **Сумісність із MonsterASP Free Plan**:
+   - Автоматичний polling кожні 4 секунди з кнопкою миттєвого ручного оновлення — 100% стабільність без розривів WebSockets на спільному безкоштовному тарифі IIS.
 
-- HTML
-- CSS
-- JavaScript
-- GitHub Pages for hosting
+---
 
-## Project Structure
+## 🚀 Запуск проєкту локально
 
-- `index.html` — Main entry point
-- `styles.css` — Styles and responsive layout
-- `js/app.js` — App state, events, and boot
-- `js/ui.js` — DOM rendering and popup
-- `js/storage.js` — localStorage persistence
-- `js/algorithm.js` — Assignment graph and cycle finder
+### Вимоги:
+- [.NET 10 SDK](https://dotnet.microsoft.com/)
+- [Node.js](https://nodejs.org/) (версія 18+)
+- SQL Server LocalDB (входить до складу Visual Studio, або `sqllocaldb start MSSQLLocalDB`)
 
-## How It Works
-
-1. Users provide a list of participant names.
-2. The algorithm builds a valid giver→receiver graph (honoring restrictions when enabled).
-3. It searches for a random Hamiltonian cycle so everyone gives and receives exactly once.
-4. The result guarantees:
-   - No duplicates
-   - No self-assignments
-   - Closed loop distribution
-
-## Running Locally
-
-Clone the repository and open `index.html` in a browser:
+### Запуск однією командою:
+У кореневій директорії проєкту виконайте:
 
 ```bash
-git clone https://github.com/OleksandrShchur/SecretSanta.git
-cd SecretSanta
+dotnet run
 ```
 
-No build step or server is required.
+> **Що відбувається автоматично:**
+> 1. Запускається .NET 10 сервер (за замовчуванням на `http://localhost:5080` та `https://localhost:7080`).
+> 2. Entity Framework Core автоматично створює базу даних `SecretSantaDb` у вашому LocalDB.
+> 3. `Microsoft.AspNetCore.SpaProxy` автоматично запускає React Vite dev-сервер (`http://localhost:5173`) та відкриває браузер!
 
-## Deployment
+---
 
-The project is deployed using GitHub Pages from the repository itself.
-No custom domain is configured.
+## ⚙️ Налаштування `appsettings.json`
 
-Default GitHub Pages URL format is used.
+Файл `appsettings.json`:
+```json
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Server=(localdb)\\mssqllocaldb;Database=SecretSantaDb;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True"
+  },
+  "Resend": {
+    "ApiKey": "",
+    "FromEmail": "Таємний Санта <santa@resend.dev>"
+  }
+}
+```
+
+*Якщо `Resend:ApiKey` порожній, додаток працює в безпечному демо-режимі (імітація розсилки з логуванням у консоль бекенду).*
+
+---
+
+## 📦 Розгортання на MonsterASP (Free Plan)
+
+1. **Збірка публікації**:
+   ```bash
+   dotnet publish -c Release -o publish
+   ```
+   *MSBuild автоматично збере React додаток (`npm run build`) і скопіює готові файли в папку `wwwroot/`.*
+
+2. **Налаштування бази даних у панелі MonsterASP**:
+   - Створіть безкоштовну базу даних MS SQL у панелі керування MonsterASP.
+   - Скопіюйте Connection String із панелі MonsterASP у `publish/appsettings.json`:
+     ```json
+     "DefaultConnection": "Server=tcp:your_monster_server,1433;Database=your_db;User ID=your_user;Password=your_password;TrustServerCertificate=True"
+     ```
+
+3. **Завантаження на хостинг**:
+   - Завантажте вміст папки `publish/` до кореневої папки вашого сайту на MonsterASP через FTP або File Manager.
+   - Готово! Застосунок працює як єдиний самодостатній сайт.

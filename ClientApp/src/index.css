@@ -1,0 +1,52 @@
+:root {
+  --color-text: #2c3e50;
+  --color-heading: #8a0000;
+  --color-heading-alt: #006400;
+  --color-accent-gold: #b8860b;
+  --color-header-panel: rgba(255, 255, 255, 0.92);
+  --color-btn: #c00;
+  --color-btn-hover: #a00;
+  --color-btn-alt: #006400;
+  --color-btn-alt-hover: #004d00;
+  --color-surface: #ffffff;
+  --color-border: #e2e8f0;
+  --font-body: "Segoe UI", -apple-system, BlinkMacSystemFont, "Roboto", sans-serif;
+  --radius: 8px;
+  --content-width: 44rem;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: var(--font-body);
+  color: var(--color-text);
+  line-height: 1.5;
+  background: radial-gradient(circle at top, #fbf7f7, #eef9ee 70%);
+  position: relative;
+}
+
+/* Новорічна гірлянда у верхній частині */
+body::after {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 80px;
+  pointer-events: none;
+  z-index: 100;
+  background-image:
+    radial-gradient(circle at 20px 35px, #ff3b3b 6px, transparent 7px),
+    radial-gradient(circle at 60px 25px, #ffd93b 6px, transparent 7px),
+    radial-gradient(circle at 100px 35px, #3bff5b 6px, transparent 7px),
+    radial-gradient(circle at 140px 25px, #3b8eff 6px, transparent 7px),
+    radial-gradient(circle at 180px 35px, #ff3bff 6px, transparent 7px);
+  background-size: 200px 80px;
+  background-repeat: repeat-x;
+}
