@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Таємний Санта</title>
+    <title>Таємний Санта 🎅</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="icon" href="favicon.png" type="image/png">
 
@@ -12,7 +12,7 @@
 
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8074228941517660"
         crossorigin="anonymous">
-        </script>
+    </script>
 </head>
 
 <body>
@@ -25,57 +25,266 @@
     </header>
 
     <main class="app">
-        <section class="add-participant" aria-labelledby="add-heading">
-            <h2 id="add-heading" class="visually-hidden">Додати учасника</h2>
-            <form id="add-form" class="add-form">
-                <label class="visually-hidden" for="name-input">Ім'я учасника</label>
-                <input type="text" id="name-input" name="name" placeholder="Ім'я учасника" autocomplete="off" autofocus>
-                <button type="submit" id="add-btn">Додати учасника</button>
-            </form>
-        </section>
+        <!-- Навігація між режимами -->
+        <nav class="app-nav" aria-label="Вибір режиму роботи">
+            <button type="button" id="tab-offline-btn" class="nav-tab active">
+                🎲 Швидке жеребкування
+            </button>
+            <button type="button" id="tab-online-btn" class="nav-tab">
+                🏠 Онлайн-кімната
+            </button>
+        </nav>
 
-        <section id="participants-list" class="participants" aria-labelledby="participants-heading">
-            <h2 id="participants-heading">Учасники:</h2>
-            <ul id="participants-ul"></ul>
-        </section>
+        <!-- ==============================================
+             РЕЖИМ 1: Офлайн / Швидке жеребкування
+             ============================================== -->
+        <div id="offline-app">
+            <section class="add-participant" aria-labelledby="add-heading">
+                <h2 id="add-heading" class="visually-hidden">Додати учасника</h2>
+                <form id="add-form" class="add-form">
+                    <label class="visually-hidden" for="name-input">Ім'я учасника</label>
+                    <input type="text" id="name-input" name="name" placeholder="Ім'я учасника" autocomplete="off" autofocus>
+                    <button type="submit" id="add-btn">Додати учасника</button>
+                </form>
+            </section>
 
-        <section id="mode-section" class="mode is-hidden" aria-labelledby="mode-heading">
-            <h2 id="mode-heading">Режим жеребкування:</h2>
-            <div class="mode-options">
-                <label for="mode-with">
-                    <input type="radio" name="mode" id="mode-with" value="with">
-                    Жеребкування з обмеженнями
-                </label>
-                <label for="mode-without">
-                    <input type="radio" name="mode" id="mode-without" value="without" checked>
-                    Жеребкування без обмежень
-                </label>
+            <section id="participants-list" class="participants" aria-labelledby="participants-heading">
+                <h2 id="participants-heading">Учасники:</h2>
+                <ul id="participants-ul"></ul>
+            </section>
+
+            <section id="mode-section" class="mode is-hidden" aria-labelledby="mode-heading">
+                <h2 id="mode-heading">Режим жеребкування:</h2>
+                <div class="mode-options">
+                    <label for="mode-with">
+                        <input type="radio" name="mode" id="mode-with" value="with">
+                        Жеребкування з обмеженнями
+                    </label>
+                    <label for="mode-without">
+                        <input type="radio" name="mode" id="mode-without" value="without" checked>
+                        Жеребкування без обмежень
+                    </label>
+                </div>
+            </section>
+
+            <section id="restrictions-section" class="restrictions is-hidden" aria-labelledby="restrictions-heading">
+                <h2 id="restrictions-heading">Обмеження:</h2>
+                <p>
+                    Для кожного учасника оберіть, кому він НЕ МОЖЕ дарувати подарунок.
+                    Обмеження взаємні за замовчуванням.
+                </p>
+                <div id="restrictions-div"></div>
+            </section>
+
+            <section id="generate-section" class="generate is-hidden">
+                <button type="button" id="generate-btn">Згенерувати жеребкування</button>
+            </section>
+
+            <section id="results-section" class="results is-hidden" aria-labelledby="results-heading">
+                <h2 id="results-heading">Результати:</h2>
+                <ul id="results-ul"></ul>
+                <div class="results-actions">
+                    <button type="button" id="regen-btn">Нова генерація</button>
+                    <button type="button" id="reset-btn">Очистити все</button>
+                </div>
+            </section>
+        </div>
+
+        <!-- ==============================================
+             РЕЖИМ 2: Онлайн-кімната з розсилкою на Email
+             ============================================== -->
+        <div id="online-app" class="is-hidden">
+            <!-- Індикатор хмари / налаштувань -->
+            <div class="cloud-status-bar">
+                <div id="cloud-status-indicator" class="cloud-status-indicator">
+                    <span class="status-dot demo"></span> Демо-режим (Локальний)
+                </div>
+                <button type="button" id="cloud-config-btn" class="btn-text-sm">
+                    ⚙️ Налаштування Supabase
+                </button>
             </div>
-        </section>
 
-        <section id="restrictions-section" class="restrictions is-hidden" aria-labelledby="restrictions-heading">
-            <h2 id="restrictions-heading">Обмеження:</h2>
-            <p>
-                Для кожного учасника оберіть, кому він НЕ МОЖЕ дарувати подарунок.
-                Обмеження взаємні за замовчуванням.
-            </p>
-            <div id="restrictions-div"></div>
-        </section>
+            <!-- Підвид 1: Створення кімнати (Хост) -->
+            <section id="view-create-room" class="room-card is-hidden">
+                <h2>Створити онлайн-кімнату 🎅</h2>
+                <p class="section-desc">
+                    Створіть кімнату, надішліть посилання друзям чи колегам. Кожен заповнить свої дані та побажання, а після жеребкування система розішле персональні листи!
+                </p>
 
-        <section id="generate-section" class="generate is-hidden">
-            <button type="button" id="generate-btn">Згенерувати жеребкування</button>
-        </section>
+                <form id="create-room-form" class="room-form">
+                    <div class="form-group">
+                        <label for="create-room-title">Назва кімнати / події *</label>
+                        <input type="text" id="create-room-title" placeholder="напр., Новорічний офіс 2026 або Сім'я" required>
+                    </div>
 
-        <section id="results-section" class="results is-hidden" aria-labelledby="results-heading">
-            <h2 id="results-heading">Результати:</h2>
-            <ul id="results-ul"></ul>
-            <div class="results-actions">
-                <button type="button" id="regen-btn">Нова генерація</button>
-                <button type="button" id="reset-btn">Очистити все</button>
-            </div>
-        </section>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="create-host-name">Ваше ім'я та прізвище (Хост) *</label>
+                            <input type="text" id="create-host-name" placeholder="Олександр Щур" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="create-host-email">Ваш Email *</label>
+                            <input type="email" id="create-host-email" placeholder="host@example.com" required>
+                        </div>
+                    </div>
+
+                    <div class="form-checkbox">
+                        <label for="create-host-participates">
+                            <input type="checkbox" id="create-host-participates" checked>
+                            Я також беру участь у жеребкуванні як учасник
+                        </label>
+                    </div>
+
+                    <button type="submit" class="btn-primary-lg">Створити кімнату ➔</button>
+                </form>
+            </section>
+
+            <!-- Підвид 2: Приєднання учасника (?room=...) -->
+            <section id="view-join-room" class="room-card is-hidden">
+                <h2>Приєднатися до Таємного Санти 🎄</h2>
+                <p class="room-subheading">
+                    Кімната: <strong id="join-room-title"></strong> (Організатор: <span id="join-host-name"></span>)
+                </p>
+
+                <div id="join-form-card">
+                    <p class="section-desc">
+                        Будь ласка, заповніть інформацію про себе, щоб взяти участь у розіграші:
+                    </p>
+
+                    <form id="join-room-form" class="room-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="join-first-name">Ім'я *</label>
+                                <input type="text" id="join-first-name" placeholder="Іван" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="join-last-name">Прізвище *</label>
+                                <input type="text" id="join-last-name" placeholder="Коваленко" required>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="join-email">Ваш Email (для отримання результатів) *</label>
+                            <input type="email" id="join-email" placeholder="ivan@example.com" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="join-wishlist">Побажання до подарунка (опціонально)</label>
+                            <textarea id="join-wishlist" rows="3" placeholder="Що ви любите, які хобі, розмір одягу або чого краще НЕ дарувати..."></textarea>
+                        </div>
+
+                        <button type="submit" class="btn-primary-lg">Взяти участь у Таємному Санті 🎁</button>
+                    </form>
+                </div>
+
+                <div id="join-success-card" class="success-card is-hidden">
+                    <div class="success-icon">🎉</div>
+                    <h3>Чудово, <span id="join-success-name"></span>!</h3>
+                    <p>Ваші дані успішно збережено.</p>
+                    <p class="success-subtext">
+                        Коли організатор проведе жеребкування, ви отримаєте лист на вашу пошту із ім'ям людини, якій ви даруватимете подарунок! 🎅✨
+                    </p>
+                </div>
+            </section>
+
+            <!-- Підвид 3: Панель керування хоста (?room=...&admin=...) -->
+            <section id="view-host-dashboard" class="room-card is-hidden">
+                <div class="dashboard-header">
+                    <div>
+                        <div class="dashboard-label">Панель організатора</div>
+                        <h2 id="host-room-title">Назва кімнати</h2>
+                    </div>
+                    <span id="host-status-badge" class="status-badge badge-collecting">Збір учасників</span>
+                </div>
+
+                <!-- Блок запрошень -->
+                <div class="dashboard-section invite-section">
+                    <h3>📢 Запросити учасників</h3>
+                    
+                    <label for="host-share-link-input">Посилання для приєднання:</label>
+                    <div class="copy-input-group">
+                        <input type="text" id="host-share-link-input" readonly>
+                        <button type="button" id="host-copy-link-btn" class="btn-secondary">Скопіювати</button>
+                    </div>
+
+                    <form id="host-email-invites-form" class="email-invites-form">
+                        <label for="host-email-invites-input">Або надіслати запрошення на Email (через кому або з нового рядка):</label>
+                        <textarea id="host-email-invites-input" rows="2" placeholder="friend1@gmail.com, friend2@gmail.com"></textarea>
+                        <button type="submit" class="btn-secondary-sm">Надіслати запрошення ✉️</button>
+                    </form>
+                </div>
+
+                <!-- Список зареєстрованих учасників -->
+                <div class="dashboard-section">
+                    <div class="section-title-row">
+                        <h3 id="host-participant-count">Зареєстровано учасників: 0</h3>
+                        <span class="tip-badge">Мін. 3 для старту</span>
+                    </div>
+
+                    <ul id="host-participants-list" class="host-participants-list">
+                        <!-- Динамічні учасники -->
+                    </ul>
+                </div>
+
+                <!-- Секція обмежень -->
+                <div id="host-restrictions-container" class="dashboard-section is-hidden">
+                    <div class="restrictions-header-row">
+                        <h3>Пари виключень (обмеження)</h3>
+                        <label class="toggle-label" for="host-restrictions-toggle">
+                            <input type="checkbox" id="host-restrictions-toggle">
+                            Показати матрицю обмежень
+                        </label>
+                    </div>
+                    <div id="host-restrictions-div" class="host-restrictions-div is-hidden">
+                        <!-- Динамічна матриця -->
+                    </div>
+                </div>
+
+                <!-- Жеребкування -->
+                <div class="dashboard-section shuffle-section">
+                    <div id="host-shuffle-success" class="success-card is-hidden">
+                        <div class="success-icon">🎄</div>
+                        <h3>Жеребкування успішно проведено!</h3>
+                        <p>Усі учасники отримали персональні листи з підопічними на свій Email. Кімната закрита для редагування.</p>
+                    </div>
+
+                    <button type="button" id="host-shuffle-btn" class="btn-primary-lg">
+                        🎅 Провести жеребкування та розіслати листи
+                    </button>
+                    <p id="host-shuffle-notice" class="shuffle-notice"></p>
+                </div>
+            </section>
+        </div>
     </main>
 
+    <!-- Модальне вікно конфігурації Supabase -->
+    <div id="config-modal" class="popup-overlay is-hidden" role="dialog" aria-modal="true" aria-labelledby="config-title">
+        <div class="popup config-popup">
+            <h3 id="config-title">⚙️ Підключення Supabase</h3>
+            <p class="config-desc">
+                Введіть URL та публічний anon ключ вашого проєкту Supabase. Для повної онлайн-розсилки через Resend виконайте скрипт <code>supabase/schema.sql</code> в SQL Editor вашого проєкту.
+            </p>
+
+            <form id="config-form" class="config-form">
+                <div class="form-group">
+                    <label for="config-supabase-url">Supabase Project URL:</label>
+                    <input type="text" id="config-supabase-url" placeholder="https://xyzcompany.supabase.co">
+                </div>
+
+                <div class="form-group">
+                    <label for="config-supabase-key">Supabase Anon Public Key:</label>
+                    <input type="text" id="config-supabase-key" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...">
+                </div>
+
+                <div class="modal-actions">
+                    <button type="submit" class="btn-primary">Зберегти налаштування</button>
+                    <button type="button" id="config-modal-close" class="btn-secondary">Закрити</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Загальне спливаюче вікно для повідомлень -->
     <div id="popup-overlay" class="popup-overlay is-hidden" role="dialog" aria-modal="true" aria-labelledby="popup-message">
         <div class="popup">
             <p id="popup-message"></p>
@@ -83,9 +292,14 @@
         </div>
     </div>
 
+    <!-- Скрипти -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/config.js"></script>
+    <script src="js/supabase-client.js"></script>
     <script src="js/storage.js"></script>
     <script src="js/algorithm.js"></script>
     <script src="js/ui.js"></script>
+    <script src="js/room.js"></script>
     <script src="js/app.js"></script>
 </body>
 

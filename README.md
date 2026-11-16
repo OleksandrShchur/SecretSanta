@@ -1,63 +1,118 @@
 # Secret Santa 🎅
-**A simple, client-side Secret Santa generator** that randomly assigns gift recipients with no self-assignments and a single closed loop. Runs entirely in the browser—no backend, no data stored on a server.
 
-The project allows participants to be randomly assigned a recipient while ensuring each person both gives and receives exactly one gift.
+**Сучасний та святковий організатор Таємного Санти** з підтримкою двох режимів:
+1. 🎲 **Швидке жеребкування (Офлайн)**: миттєвий локальний розподіл подарунків прямо в браузері.
+2. 🏠 **Онлайн-кімната з розсилкою на Email**: створення кімнати, посилання для запрошення учасників, збір побажань та імен, панель організатора в реальному часі, підтримка обмежень пар і конфіденційне жеребкування з автоматичною розсилкою святкових листів через **Resend** та **Supabase**.
 
-## Live Demo
+---
 
-The application is available online via GitHub Pages:
+## 🌟 Основні можливості
+
+- **Два режими роботи**:
+  - Локальний (швидке жеребкування на одному екрані)
+  - Онлайн-кімната (кожен учасник заходить зі свого пристрою)
+- **Створення кімнати хостом**:
+  - Отримання унікального посилання для приєднання
+  - Секретне адмін-посилання хоста для керування кімнатою без необхідності реєстрації
+- **Зручні запрошення**:
+  - Копіювання посилання в 1 клік (для Telegram, WhatsApp, Viber тощо)
+  - Масова відправка запрошень на email безпосередньо з додатку
+- **Збір інформації учасників**:
+  - Ім'я та прізвище
+  - Email (для отримання результатів жеребкування)
+  - Побажання до подарунка / антипобажання (опціонально)
+- **Панель організатора в реальному часі**:
+  - Лічильник зареєстрованих учасників
+  - Список учасників (ПІБ, email, бейдж із побажаннями)
+  - Можливість видалення учасника
+  - Налаштування взаємних та індивідуальних обмежень (хто кому не може дарувати)
+- **Гарантія повної таємниці**:
+  - Жеребкування та відправка листів відбуваються на сервері (Supabase Edge Functions).
+  - Жоден учасник (і навіть хост у браузері) не бачить чужих пар — кожен отримує лише свого підопічного на пошту!
+  - Алгоритм гарантує єдиний замкнений цикл (Hamiltonian cycle), відсутність самопризначень та дотримання всіх обмежень.
+
+---
+
+## 🚀 Live Demo
+
+Додаток доступний онлайн на GitHub Pages:
 
     https://oleksandrshchur.github.io/SecretSanta/
 
-## Features
+*Примітка: У додатку доступний як повноцінний хмарний режим через Supabase, так і локальний демо-режим, який працює «з коробки» без налаштування ключів.*
 
-- Random Secret Santa assignment
-- No self-assignment
-- Optional pair restrictions
-- Deterministic, transparent logic
-- Client-side only (localStorage for draft state)
-- Works directly in the browser
+---
 
-## Tech Stack
+## 🛠 Технічний стек
 
-- HTML
-- CSS
-- JavaScript
-- GitHub Pages for hosting
+- **Frontend**: HTML5, CSS3, Vanilla JavaScript (без сторонніх збирачів, працює безпосередньо як статичний сайт)
+- **Database & Realtime**: [Supabase](https://supabase.com) (PostgreSQL, Row Level Security, Realtime subscriptions)
+- **Backend / Edge Functions**: Supabase Edge Functions (Deno / TypeScript)
+- **Email Delivery**: [Resend](https://resend.com) API (висока якість доставки святкових HTML-листів)
+- **Hosting**: GitHub Pages
 
-## Project Structure
+---
 
-- `index.html` — Main entry point
-- `styles.css` — Styles and responsive layout
-- `js/app.js` — App state, events, and boot
-- `js/ui.js` — DOM rendering and popup
-- `js/storage.js` — localStorage persistence
-- `js/algorithm.js` — Assignment graph and cycle finder
+## 📁 Структура проєкту
 
-## How It Works
+- `index.html` — Головна точка входу з перемикачем режимів (Офлайн / Онлайн)
+- `styles.css` — Святкові стилі, адаптивна верстка, анімація снігу та гірлянд
+- `js/`
+  - `config.js` — Конфігурація та збереження ключів підключення до Supabase
+  - `supabase-client.js` — Клієнт для роботи з Supabase (включає прозорий локальний демо-режим)
+  - `room.js` — Логіка онлайн-кімнат, панелі хоста, приєднання учасників та оновлення в реальному часі
+  - `algorithm.js` — Алгоритм пошуку випадкового гамільтонового циклу з обмеженнями
+  - `ui.js` — Рендеринг інтерфейсу офлайн-режиму
+  - `storage.js` — Збереження стану офлайн-генератора в `localStorage`
+  - `app.js` — Ініціалізація та запуск застосунку
+- `supabase/`
+  - `schema.sql` — Повна схема бази даних (таблиці `rooms`, `participants`, `restrictions`, `assignments`, RLS-політики та індекси)
+  - `functions/`
+    - `shuffle-and-send/` — Edge Function для безпечного жеребкування та розсилки листів через Resend
+    - `send-invites/` — Edge Function для відправки email-запрошень до кімнати
 
-1. Users provide a list of participant names.
-2. The algorithm builds a valid giver→receiver graph (honoring restrictions when enabled).
-3. It searches for a random Hamiltonian cycle so everyone gives and receives exactly once.
-4. The result guarantees:
-   - No duplicates
-   - No self-assignments
-   - Closed loop distribution
+---
 
-## Running Locally
+## ⚙️ Налаштування Supabase та Resend (для живої розсилки)
 
-Clone the repository and open `index.html` in a browser:
+### 1. Налаштування бази даних у Supabase
+1. Створіть безкоштовний проєкт на [supabase.com](https://supabase.com).
+2. Відкрийте **SQL Editor** у консолі Supabase.
+3. Скопіюйте вміст файлу `supabase/schema.sql` та виконайте його (натисніть **Run**).
+
+### 2. Розгортання Edge Functions та Resend API
+1. Отримайте безкоштовний API ключ на [resend.com](https://resend.com).
+2. Встановіть Supabase CLI та виконайте логін:
+   ```bash
+   npx supabase login
+   npx supabase link --project-ref your-project-ref
+   ```
+3. Встановіть секрет із ключем Resend:
+   ```bash
+   npx supabase secrets set RESEND_API_KEY=re_your_api_key_here
+   ```
+4. Розгорніть Edge Functions:
+   ```bash
+   npx supabase functions deploy shuffle-and-send
+   npx supabase functions deploy send-invites
+   ```
+
+### 3. Підключення у веб-інтерфейсі
+Відкрийте сайт у браузері, перейдіть на вкладку **«🏠 Онлайн-кімната»**, натисніть кнопку **«⚙️ Налаштування Supabase»** у правому верхньому кутку та введіть:
+- `Supabase Project URL` (з розділу Project Settings -> API)
+- `Supabase Anon Public Key` (з розділу Project Settings -> API)
+
+Після збереження статус зміниться на зелений індикатор **«Supabase підключено»**, і кімнати синхронізуватимуться з вашою базою даних!
+
+---
+
+## 💻 Локальний запуск
+
+Склонуйте репозиторій та відкрийте `index.html` у будь-якому сучасному браузері:
 
 ```bash
 git clone https://github.com/OleksandrShchur/SecretSanta.git
 cd SecretSanta
 ```
 
-No build step or server is required.
-
-## Deployment
-
-The project is deployed using GitHub Pages from the repository itself.
-No custom domain is configured.
-
-Default GitHub Pages URL format is used.
+Ніяких складних збірок чи `npm install` не потрібно — додаток готовий до роботи відразу!
