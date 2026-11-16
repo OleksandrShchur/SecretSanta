@@ -12,6 +12,8 @@ import {
   AlertCircle,
   Mail,
   CheckCircle2,
+  Share2,
+  Key,
 } from 'lucide-react';
 import type { RoomAdmin } from '../types';
 import {
@@ -25,6 +27,7 @@ import {
 interface HostDashboardProps {
   roomId: string;
   adminToken: string;
+  onGoHome?: () => void;
 }
 
 export const HostDashboard: React.FC<HostDashboardProps> = ({ roomId, adminToken }) => {
@@ -34,7 +37,8 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({ roomId, adminToken
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   // Link copy
-  const [copied, setCopied] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
+  const [copiedAdminLink, setCopiedAdminLink] = useState(false);
 
   // Email invites
   const [inviteEmails, setInviteEmails] = useState('');
@@ -81,14 +85,41 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({ roomId, adminToken
   }, [room?.status, fetchRoomData]);
 
   const inviteUrl = `${window.location.origin}?tab=online&room=${roomId}`;
+  const adminUrl = window.location.href;
 
   const handleCopyLink = async () => {
     try {
       await navigator.clipboard.writeText(inviteUrl);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2000);
     } catch {
       alert('Посилання для приєднання: ' + inviteUrl);
+    }
+  };
+
+  const handleShareLink = async () => {
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({
+          title: `Таємний Санта: ${room?.title || 'Приєднуйтесь!'}`,
+          text: `Приєднуйтесь до жеребкування «Таємний Санта» у кімнаті «${room?.title}»! 🎅🎁`,
+          url: inviteUrl,
+        });
+        return;
+      } catch (err: any) {
+        if (err.name === 'AbortError') return;
+      }
+    }
+    handleCopyLink();
+  };
+
+  const handleCopyAdminLink = async () => {
+    try {
+      await navigator.clipboard.writeText(adminUrl);
+      setCopiedAdminLink(true);
+      setTimeout(() => setCopiedAdminLink(false), 2000);
+    } catch {
+      alert('Ваше посилання організатора: ' + adminUrl);
     }
   };
 
@@ -165,9 +196,15 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({ roomId, adminToken
     setShuffling(true);
     try {
       const res = await performShuffle(roomId, adminToken);
-      setShuffleSuccessMsg(
-        `🎉 Жеребкування успішно проведено! Розіслано ${res.emailsSent} листів із ${res.totalParticipants} учасників.`
-      );
+      if (res.emailsSent < res.totalParticipants) {
+        setShuffleSuccessMsg(
+          `⚠️ Жеребкування проведено! Надіслано ${res.emailsSent} з ${res.totalParticipants} листів. ${res.errorMessage || ''}`
+        );
+      } else {
+        setShuffleSuccessMsg(
+          `🎉 Жеребкування успішно проведено! Розіслано всі ${res.emailsSent} листів із ${res.totalParticipants} учасників.`
+        );
+      }
       await fetchRoomData(true);
     } catch (err: any) {
       alert('Помилка жеребкування:\n' + err.message);
@@ -180,7 +217,7 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({ roomId, adminToken
     return (
       <div className="card loading-card">
         <RefreshCw size={32} className="spin text-gold" />
-        <p>Завантаження кімнати...</p>
+        <p>Завантаження даних кімнати...</p>
       </div>
     );
   }
@@ -195,13 +232,14 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({ roomId, adminToken
   }
 
   const isShuffled = room.status === 'shuffled';
+  const hasShareApi = typeof navigator !== 'undefined' && !!navigator.share;
 
   return (
     <div className="dashboard-container">
       {/* Header Card */}
       <div className="card dashboard-header-card">
         <div className="dashboard-header-top">
-          <div>
+          <div className="dashboard-title-group">
             <span className="badge-label">Панель організатора</span>
             <h2>{room.title}</h2>
           </div>
@@ -217,16 +255,33 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({ roomId, adminToken
               type="button"
               className="btn-icon"
               onClick={() => fetchRoomData(true)}
-              title="Оновити список"
+              title="Оновити список учасників"
+              aria-label="Оновити дані"
             >
               <RefreshCw size={18} className={isRefreshing ? 'spin' : ''} />
             </button>
           </div>
         </div>
 
+        {/* Secret Admin Link Tip */}
+        <div className="admin-link-tip">
+          <div className="admin-tip-text">
+            <Key size={16} className="text-gold flex-shrink-0" />
+            <span>Це ваше секретне посилання для керування кімнатою. Збережіть його:</span>
+          </div>
+          <button
+            type="button"
+            className={`btn btn-sm ${copiedAdminLink ? 'btn-success' : 'btn-secondary'}`}
+            onClick={handleCopyAdminLink}
+          >
+            {copiedAdminLink ? <Check size={14} /> : <Copy size={14} />}
+            <span>{copiedAdminLink ? 'Скопійовано!' : 'Скопіювати адмін-лінк'}</span>
+          </button>
+        </div>
+
         {shuffleSuccessMsg && (
-          <div className="alert-success">
-            <CheckCircle2 size={20} />
+          <div className="alert-success" role="alert">
+            <CheckCircle2 size={20} className="flex-shrink-0" />
             <span>{shuffleSuccessMsg}</span>
           </div>
         )}
@@ -236,31 +291,47 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({ roomId, adminToken
       {!isShuffled && (
         <div className="card invite-card">
           <div className="card-header">
-            <Mail size={20} className="text-forest" />
-            <h3>Запросити учасників</h3>
+            <Mail size={20} className="text-forest flex-shrink-0" />
+            <div>
+              <h3>Запросити учасників</h3>
+              <p className="card-desc">Поділіться цим посиланням у месенджері або надішліть email</p>
+            </div>
           </div>
 
           <div className="invite-block">
-            <label>Посилання для приєднання:</label>
+            <label className="field-label">Посилання для учасників:</label>
             <div className="copy-row">
               <input type="text" readOnly value={inviteUrl} className="input-text" />
-              <button
-                type="button"
-                className={`btn ${copied ? 'btn-success' : 'btn-secondary'}`}
-                onClick={handleCopyLink}
-              >
-                {copied ? <Check size={18} /> : <Copy size={18} />}
-                <span>{copied ? 'Скопійовано!' : 'Скопіювати'}</span>
-              </button>
+              <div className="invite-actions-wrap">
+                {hasShareApi && (
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-share"
+                    onClick={handleShareLink}
+                    title="Поділитися через месенджер"
+                  >
+                    <Share2 size={16} />
+                    <span>Поділитись</span>
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className={`btn ${copiedLink ? 'btn-success' : 'btn-primary'}`}
+                  onClick={handleCopyLink}
+                >
+                  {copiedLink ? <Check size={16} /> : <Copy size={16} />}
+                  <span>{copiedLink ? 'Скопійовано!' : 'Скопіювати'}</span>
+                </button>
+              </div>
             </div>
           </div>
 
           <form onSubmit={handleSendInvites} className="email-invites-form">
-            <label>Або надіслати запрошення на Email (через кому чи з нового рядка):</label>
+            <label className="field-label">Або розіслати запрошення на email (через кому):</label>
             <textarea
               className="input-textarea"
               rows={2}
-              placeholder="friend1@example.com, friend2@example.com"
+              placeholder="friend1@example.com, colleague@work.com"
               value={inviteEmails}
               onChange={(e) => setInviteEmails(e.target.value)}
             />
@@ -282,7 +353,7 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({ roomId, adminToken
       <div className="card participants-card">
         <div className="card-header-row">
           <div className="title-with-badge">
-            <Users size={20} className="text-forest" />
+            <Users size={20} className="text-forest flex-shrink-0" />
             <h3>Учасники ({room.participants.length})</h3>
           </div>
           {room.participants.length < 3 && !isShuffled && (
@@ -298,32 +369,35 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({ roomId, adminToken
           <div className="participants-grid">
             {room.participants.map((p, idx) => (
               <div key={p.id} className="participant-card-item">
-                <div className="participant-main">
-                  <div className="participant-num">{idx + 1}</div>
-                  <div className="participant-details">
-                    <strong className="participant-name">
-                      {p.firstName} {p.lastName}
-                    </strong>
-                    <span className="participant-email">{p.email}</span>
+                <div className="participant-card-top">
+                  <div className="participant-main">
+                    <div className="participant-num">{idx + 1}</div>
+                    <div className="participant-details">
+                      <strong className="participant-name">
+                        {p.firstName} {p.lastName}
+                      </strong>
+                      <span className="participant-email">{p.email}</span>
+                    </div>
                   </div>
+
+                  {!isShuffled && (
+                    <button
+                      type="button"
+                      className="btn-icon-danger"
+                      onClick={() => handleRemove(p.id, `${p.firstName} ${p.lastName}`)}
+                      title={`Видалити ${p.firstName} ${p.lastName}`}
+                      aria-label={`Видалити ${p.firstName} ${p.lastName}`}
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  )}
                 </div>
 
                 {p.wishlist && (
                   <div className="wishlist-tag">
-                    <Gift size={14} />
-                    <span>{p.wishlist}</span>
+                    <Gift size={14} className="flex-shrink-0" />
+                    <span>Побажання: {p.wishlist}</span>
                   </div>
-                )}
-
-                {!isShuffled && (
-                  <button
-                    type="button"
-                    className="btn-icon-danger"
-                    onClick={() => handleRemove(p.id, `${p.firstName} ${p.lastName}`)}
-                    title="Видалити учасника"
-                  >
-                    <Trash2 size={16} />
-                  </button>
                 )}
               </div>
             ))}
@@ -331,54 +405,71 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({ roomId, adminToken
         )}
       </div>
 
-      {/* Restrictions Card */}
+      {/* Restrictions Card with Chips */}
       {room.participants.length >= 2 && (
         <div className="card restrictions-card">
           <div className="restrictions-header">
             <div className="title-with-badge">
-              <Sliders size={20} className="text-forest" />
-              <h3>Пари виключень (обмеження)</h3>
+              <Sliders size={20} className="text-forest flex-shrink-0" />
+              <div>
+                <h3>Пари виключень (обмеження)</h3>
+                <p className="card-desc">Хто кому не повинен дарувати подарунок</p>
+              </div>
             </div>
-            <label className="toggle-label">
-              <input
-                type="checkbox"
-                checked={showRestrictions}
-                onChange={(e) => setShowRestrictions(e.target.checked)}
-              />
-              <span>Показати матрицю</span>
-            </label>
+            <button
+              type="button"
+              className={`btn btn-sm ${showRestrictions ? 'btn-secondary' : 'btn-outline'}`}
+              onClick={() => setShowRestrictions(!showRestrictions)}
+            >
+              {showRestrictions ? 'Приховати' : 'Налаштувати'}
+            </button>
           </div>
 
           {showRestrictions && (
-            <div className="restrictions-matrix">
-              {room.participants.map((giver) => (
-                <div key={giver.id} className="matrix-row">
-                  <strong>
-                    {giver.firstName} {giver.lastName} не дарує:
-                  </strong>
-                  <div className="matrix-checkboxes">
-                    {room.participants.map((receiver) => {
-                      if (giver.id === receiver.id) return null;
-                      const isRestricted = room.restrictions?.some(
-                        (r) => r.giverId === giver.id && r.receiverId === receiver.id
-                      );
-                      return (
-                        <label key={receiver.id} className="cb-label-sm">
-                          <input
-                            type="checkbox"
+            <div className="restrictions-box">
+              <div className="restrictions-box-header">
+                <h4>Натисніть на ім'я, щоб заборонити пару:</h4>
+                <span className="hint-pill">Червоний = заборонено</span>
+              </div>
+              <div className="restrictions-list">
+                {room.participants.map((giver) => (
+                  <div key={giver.id} className="restriction-row">
+                    <span className="giver-label">
+                      <strong>
+                        {giver.firstName} {giver.lastName}
+                      </strong>{' '}
+                      не дарує:
+                    </span>
+                    <div className="chips-wrap">
+                      {room.participants.map((receiver) => {
+                        if (giver.id === receiver.id) return null;
+                        const isRestricted = room.restrictions?.some(
+                          (r) => r.giverId === giver.id && r.receiverId === receiver.id
+                        );
+                        return (
+                          <button
+                            key={receiver.id}
+                            type="button"
                             disabled={isShuffled}
-                            checked={isRestricted}
-                            onChange={() => handleToggleRestriction(giver.id, receiver.id)}
-                          />
-                          <span>
-                            {receiver.firstName} {receiver.lastName}
-                          </span>
-                        </label>
-                      );
-                    })}
+                            className={`chip ${isRestricted ? 'chip-restricted' : 'chip-allowed'}`}
+                            onClick={() => handleToggleRestriction(giver.id, receiver.id)}
+                            title={
+                              isRestricted
+                                ? `${giver.firstName} НЕ дарує ${receiver.firstName}`
+                                : `${giver.firstName} може дарувати ${receiver.firstName}`
+                            }
+                          >
+                            <span className="chip-icon">{isRestricted ? '✕' : '+'}</span>
+                            <span className="chip-name">
+                              {receiver.firstName} {receiver.lastName}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           )}
         </div>
@@ -388,11 +479,11 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({ roomId, adminToken
       <div className="card shuffle-card">
         {isShuffled ? (
           <div className="shuffled-box">
-            <CheckCircle2 size={32} className="text-forest" />
+            <CheckCircle2 size={36} className="text-forest" />
             <h3>Жеребкування успішно завершено! 🎄</h3>
             <p>
-              Усі учасники отримали персональні листи з підопічними на свій Email. Кімната закрита
-              для змін.
+              Усі учасники отримали персональні святкові листи з іменами своїх підопічних на свій
+              email. Кімната закрита для змін.
             </p>
           </div>
         ) : (
@@ -406,7 +497,7 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({ roomId, adminToken
               <Sparkles size={22} />
               <span>
                 {shuffling
-                  ? 'Жеребкуємо та розсилаємо листи...'
+                  ? 'Жеребкуємо та надсилаємо листи...'
                   : '🎅 Провести жеребкування та розіслати листи'}
               </span>
             </button>

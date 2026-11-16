@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { ArrowLeft } from 'lucide-react';
 import { Header } from './components/Header';
 import { Navbar } from './components/Navbar';
 import { OfflineGenerator } from './components/OfflineGenerator';
@@ -39,6 +40,14 @@ export const App: React.FC = () => {
     window.history.pushState({}, '', url.toString());
   };
 
+  const handleGoHome = () => {
+    setCurrentRoomId(null);
+    setCurrentAdminToken(null);
+    const url = new URL(window.location.href);
+    url.search = activeTab === 'online' ? '?tab=online' : '';
+    window.history.pushState({}, '', url.toString());
+  };
+
   const handleRoomCreated = (roomId: string, adminToken: string) => {
     setCurrentRoomId(roomId);
     setCurrentAdminToken(adminToken);
@@ -50,10 +59,16 @@ export const App: React.FC = () => {
   const renderContent = () => {
     if (activeTab === 'online') {
       if (currentRoomId && currentAdminToken) {
-        return <HostDashboard roomId={currentRoomId} adminToken={currentAdminToken} />;
+        return (
+          <HostDashboard
+            roomId={currentRoomId}
+            adminToken={currentAdminToken}
+            onGoHome={handleGoHome}
+          />
+        );
       }
       if (currentRoomId) {
-        return <JoinRoom roomId={currentRoomId} />;
+        return <JoinRoom roomId={currentRoomId} onGoHome={handleGoHome} />;
       }
       return <CreateRoom onRoomCreated={handleRoomCreated} />;
     }
@@ -63,9 +78,26 @@ export const App: React.FC = () => {
 
   return (
     <div className="app-container">
-      <Header />
+      <Header onGoHome={currentRoomId ? handleGoHome : undefined} />
       <main className="main-content">
-        {!currentRoomId && <Navbar activeTab={activeTab} onTabChange={handleTabChange} />}
+        {!currentRoomId ? (
+          <Navbar activeTab={activeTab} onTabChange={handleTabChange} />
+        ) : (
+          <div className="room-nav-bar">
+            <button
+              type="button"
+              className="btn-nav-back"
+              onClick={handleGoHome}
+              aria-label="Повернутися до вибору режимів"
+            >
+              <ArrowLeft size={16} />
+              <span>Всі режими</span>
+            </button>
+            <span className="room-nav-pill">
+              {currentAdminToken ? '👑 Панель організатора' : '🎁 Кімната учасника'}
+            </span>
+          </div>
+        )}
         {renderContent()}
       </main>
 

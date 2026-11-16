@@ -24,3 +24,5 @@ Thumbs.db
 $RECYCLE.BIN/
 *.lnk
 appsettings.Development.json
+appsettings.Production.json
+Properties/PublishProfiles

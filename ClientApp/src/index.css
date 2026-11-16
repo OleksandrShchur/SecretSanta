@@ -1,18 +1,29 @@
 :root {
-  --color-text: #2c3e50;
-  --color-heading: #8a0000;
-  --color-heading-alt: #006400;
-  --color-accent-gold: #b8860b;
-  --color-header-panel: rgba(255, 255, 255, 0.92);
-  --color-btn: #c00;
-  --color-btn-hover: #a00;
-  --color-btn-alt: #006400;
-  --color-btn-alt-hover: #004d00;
+  --color-text: #1e293b;
+  --color-text-muted: #64748b;
+  --color-heading: #991b1b;
+  --color-heading-alt: #166534;
+  --color-accent-gold: #d97706;
+  --color-header-panel: rgba(255, 255, 255, 0.94);
+  --color-btn: #dc2626;
+  --color-btn-hover: #b91c1c;
+  --color-btn-alt: #15803d;
+  --color-btn-alt-hover: #166534;
   --color-surface: #ffffff;
+  --color-surface-soft: #f8fafc;
   --color-border: #e2e8f0;
-  --font-body: "Segoe UI", -apple-system, BlinkMacSystemFont, "Roboto", sans-serif;
-  --radius: 8px;
+  --color-border-subtle: #cbd5e1;
+  --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-full: 9999px;
   --content-width: 44rem;
+  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 16px -2px rgba(0, 0, 0, 0.07), 0 2px 6px -1px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 12px 30px -4px rgba(0, 0, 0, 0.08), 0 4px 12px -2px rgba(0, 0, 0, 0.04);
+  --shadow-festive: 0 8px 24px -4px rgba(220, 38, 38, 0.28);
 }
 
 *,
@@ -21,32 +32,58 @@
   box-sizing: border-box;
 }
 
+html {
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+  overflow-x: hidden;
+  width: 100%;
+}
+
 body {
   margin: 0;
-  min-height: 100vh;
+  padding: 0;
+  width: 100%;
+  min-height: 100dvh;
+  overflow-x: hidden;
   font-family: var(--font-body);
   color: var(--color-text);
   line-height: 1.5;
-  background: radial-gradient(circle at top, #fbf7f7, #eef9ee 70%);
+  background: radial-gradient(120% 90% at 50% -10%, #fff7f7 0%, #f4faf4 55%, #eaf3ea 100%);
   position: relative;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Новорічна гірлянда у верхній частині */
+/* Новорічна гірлянда у верхній частині (абсолютне позиціонування, щоб не перекривати контент при прокрутці) */
 body::after {
   content: "";
-  position: fixed;
+  position: absolute;
   top: 0;
   left: 0;
   right: 0;
-  height: 80px;
+  height: 22px;
   pointer-events: none;
-  z-index: 100;
+  z-index: 10;
   background-image:
-    radial-gradient(circle at 20px 35px, #ff3b3b 6px, transparent 7px),
-    radial-gradient(circle at 60px 25px, #ffd93b 6px, transparent 7px),
-    radial-gradient(circle at 100px 35px, #3bff5b 6px, transparent 7px),
-    radial-gradient(circle at 140px 25px, #3b8eff 6px, transparent 7px),
-    radial-gradient(circle at 180px 35px, #ff3bff 6px, transparent 7px);
-  background-size: 200px 80px;
+    radial-gradient(circle at 15px 10px, #ef4444 3px, transparent 4px),
+    radial-gradient(circle at 45px 6px, #eab308 3px, transparent 4px),
+    radial-gradient(circle at 75px 12px, #22c55e 3px, transparent 4px),
+    radial-gradient(circle at 105px 7px, #3b82f6 3px, transparent 4px),
+    radial-gradient(circle at 135px 11px, #ec4899 3px, transparent 4px);
+  background-size: 150px 22px;
   background-repeat: repeat-x;
+  opacity: 0.85;
+}
+
+@media (min-width: 640px) {
+  body::after {
+    height: 36px;
+    background-image:
+      radial-gradient(circle at 20px 16px, #ef4444 4.5px, transparent 5.5px),
+      radial-gradient(circle at 60px 10px, #eab308 4.5px, transparent 5.5px),
+      radial-gradient(circle at 100px 18px, #22c55e 4.5px, transparent 5.5px),
+      radial-gradient(circle at 140px 11px, #3b82f6 4.5px, transparent 5.5px),
+      radial-gradient(circle at 180px 17px, #ec4899 4.5px, transparent 5.5px);
+    background-size: 200px 36px;
+  }
 }

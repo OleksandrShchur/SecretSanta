@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sparkles, User, Mail, Gift, AlertCircle, ArrowRight } from 'lucide-react';
+import { Sparkles, User, Mail, Gift, AlertCircle, ArrowRight, Check } from 'lucide-react';
 import { createRoom } from '../api';
 
 interface CreateRoomProps {
@@ -47,18 +47,18 @@ export const CreateRoom: React.FC<CreateRoomProps> = ({ onRoomCreated }) => {
   return (
     <div className="card create-room-card">
       <div className="card-header">
-        <Sparkles size={24} className="header-icon text-gold" />
+        <Sparkles size={24} className="text-gold flex-shrink-0" />
         <div>
           <h2>Створити онлайн-кімнату 🎅</h2>
           <p className="card-desc">
-            Створіть подію, поділіться посиланням із друзями чи колегами. Кожен вкаже свої побажання, а система безпечно проведе жеребкування та розішле листи на email.
+            Створіть подію та поділіться посиланням із друзями. Кожен вкаже свої побажання, а система таємно розподілить пари та надішле листи на email.
           </p>
         </div>
       </div>
 
       {errorMsg && (
-        <div className="alert-error">
-          <AlertCircle size={18} />
+        <div className="alert-error" role="alert">
+          <AlertCircle size={18} className="flex-shrink-0" />
           <span>{errorMsg}</span>
         </div>
       )}
@@ -130,19 +130,31 @@ export const CreateRoom: React.FC<CreateRoomProps> = ({ onRoomCreated }) => {
           />
         </div>
 
-        <div className="checkbox-wrap">
-          <label className="cb-label">
-            <input
-              type="checkbox"
-              checked={hostParticipates}
-              onChange={(e) => setHostParticipates(e.target.checked)}
-            />
-            <span>Я також беру участь у жеребкуванні як учасник</span>
-          </label>
+        {/* Modern interactive toggle card for participating */}
+        <div
+          className={`toggle-card ${hostParticipates ? 'active' : ''}`}
+          onClick={() => setHostParticipates(!hostParticipates)}
+          role="checkbox"
+          aria-checked={hostParticipates}
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === ' ' || e.key === 'Enter') {
+              e.preventDefault();
+              setHostParticipates(!hostParticipates);
+            }
+          }}
+        >
+          <div className="toggle-card-checkbox">
+            {hostParticipates && <Check size={14} className="toggle-check-icon" />}
+          </div>
+          <div className="toggle-card-text">
+            <strong>Я також беру участь у жеребкуванні</strong>
+            <span>Мене буде включено до списку як дарувальника та отримувача</span>
+          </div>
         </div>
 
         {hostParticipates && (
-          <div className="form-group">
+          <div className="form-group animate-fade-in">
             <label htmlFor="host-wishlist">
               <Gift size={16} />
               <span>Ваші побажання до подарунка (опціонально)</span>
@@ -151,7 +163,7 @@ export const CreateRoom: React.FC<CreateRoomProps> = ({ onRoomCreated }) => {
               id="host-wishlist"
               className="input-textarea"
               rows={3}
-              placeholder="Що ви любите, які хобі, розмір одягу або що точно НЕ дарувати..."
+              placeholder="Що ви любите, розмір, хобі або що точно НЕ варто дарувати..."
               value={hostWishlist}
               onChange={(e) => setHostWishlist(e.target.value)}
             />

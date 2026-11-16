@@ -1,13 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { User, Mail, Gift, CheckCircle2, AlertCircle, ArrowRight } from 'lucide-react';
+import {
+  User,
+  Mail,
+  Gift,
+  CheckCircle2,
+  AlertCircle,
+  ArrowRight,
+  ArrowLeft,
+  Sparkles,
+} from 'lucide-react';
 import type { RoomPublic } from '../types';
 import { getRoom, addParticipant } from '../api';
 
 interface JoinRoomProps {
   roomId: string;
+  onGoHome?: () => void;
 }
 
-export const JoinRoom: React.FC<JoinRoomProps> = ({ roomId }) => {
+export const JoinRoom: React.FC<JoinRoomProps> = ({ roomId, onGoHome }) => {
   const [room, setRoom] = useState<RoomPublic | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -31,7 +41,7 @@ export const JoinRoom: React.FC<JoinRoomProps> = ({ roomId }) => {
     setErrorMsg(null);
 
     if (!firstName.trim() || !email.trim()) {
-      setErrorMsg("Будь ласка, введіть ім'я та email.");
+      setErrorMsg("Будь ласка, введіть ваше ім'я та email.");
       return;
     }
 
@@ -62,8 +72,16 @@ export const JoinRoom: React.FC<JoinRoomProps> = ({ roomId }) => {
   if (!room) {
     return (
       <div className="card alert-error">
-        <AlertCircle size={24} />
-        <p>{errorMsg || 'Кімнату не знайдено'}</p>
+        <AlertCircle size={24} className="flex-shrink-0" />
+        <div>
+          <p>{errorMsg || 'Кімнату не знайдено'}</p>
+          {onGoHome && (
+            <button type="button" className="btn btn-secondary btn-sm mt-3" onClick={onGoHome}>
+              <ArrowLeft size={16} />
+              <span>На головну</span>
+            </button>
+          )}
+        </div>
       </div>
     );
   }
@@ -76,6 +94,12 @@ export const JoinRoom: React.FC<JoinRoomProps> = ({ roomId }) => {
           На жаль, прийом заявок у кімнату «{room.title}» вже закрито, оскільки організатор провів
           розподіл подарунків і розіслав листи.
         </p>
+        {onGoHome && (
+          <button type="button" className="btn btn-primary mt-4 mx-auto" onClick={onGoHome}>
+            <ArrowLeft size={18} />
+            <span>На головну</span>
+          </button>
+        )}
       </div>
     );
   }
@@ -83,13 +107,22 @@ export const JoinRoom: React.FC<JoinRoomProps> = ({ roomId }) => {
   if (joined) {
     return (
       <div className="card success-card text-center">
-        <CheckCircle2 size={48} className="text-forest mx-auto" />
+        <CheckCircle2 size={52} className="text-forest mx-auto" />
         <h2>Чудово, {firstName}! 🎉</h2>
-        <p>Ваші дані успішно збережено для кімнати «{room.title}».</p>
-        <p className="success-hint">
-          Щойно організатор ({room.hostName}) проведе жеребкування, ви отримаєте лист на вашу пошту (
-          <strong>{email}</strong>) з інформацією про людину, якій ви даруватимете подарунок! 🎅✨
-        </p>
+        <p className="success-subtitle">Ваші дані успішно збережено для кімнати «{room.title}».</p>
+        <div className="success-box">
+          <p className="success-hint">
+            Щойно організатор (<strong>{room.hostName}</strong>) проведе жеребкування, ви отримаєте
+            персональний святковий лист на вашу пошту (<strong>{email}</strong>) з інформацією про
+            людину, якій ви даруватимете подарунок! 🎅✨
+          </p>
+        </div>
+        {onGoHome && (
+          <button type="button" className="btn btn-secondary mt-3 mx-auto" onClick={onGoHome}>
+            <ArrowLeft size={16} />
+            <span>Повернутися на головну</span>
+          </button>
+        )}
       </div>
     );
   }
@@ -105,8 +138,8 @@ export const JoinRoom: React.FC<JoinRoomProps> = ({ roomId }) => {
       </div>
 
       {errorMsg && (
-        <div className="alert-error">
-          <AlertCircle size={18} />
+        <div className="alert-error" role="alert">
+          <AlertCircle size={18} className="flex-shrink-0" />
           <span>{errorMsg}</span>
         </div>
       )}
@@ -171,13 +204,14 @@ export const JoinRoom: React.FC<JoinRoomProps> = ({ roomId }) => {
             id="join-wishlist"
             className="input-textarea"
             rows={3}
-            placeholder="Що ви любите, розмір одягу, улюблені книги чи що краще НЕ дарувати..."
+            placeholder="Що ви любите, розмір одягу, захоплення чи що краще НЕ дарувати..."
             value={wishlist}
             onChange={(e) => setWishlist(e.target.value)}
           />
         </div>
 
         <button type="submit" className="btn btn-primary btn-lg" disabled={submitting}>
+          <Sparkles size={20} />
           <span>{submitting ? 'Зберігаємо...' : 'Взяти участь у Таємному Санті 🎁'}</span>
           <ArrowRight size={20} />
         </button>

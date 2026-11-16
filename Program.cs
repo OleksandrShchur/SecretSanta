@@ -16,6 +16,18 @@ builder.Services.AddHttpClient();
 builder.Services.AddScoped<ISecretSantaAlgorithm, SecretSantaAlgorithm>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 
+// CORS для локальної розробки та Vite dev-сервера
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.SetIsOriginAllowed(_ => true)
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials();
+    });
+});
+
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
@@ -36,7 +48,13 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-app.UseHttpsRedirection();
+// У режимі розробки вимикаємо редирект на HTTPS, щоб уникнути CORS-блокувань Vite Proxy
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
+
+app.UseCors();
 app.UseStaticFiles();
 app.UseRouting();
 

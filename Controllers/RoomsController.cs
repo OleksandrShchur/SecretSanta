@@ -352,10 +352,18 @@ public class RoomsController : ControllerBase
                 var assign = assignments.First(a => a.GiverId == giver.Id);
                 assign.EmailSent = true;
             }
+            // Затримка 600мс для дотримання ліміту Resend Free Tier (максимум 2 запити на секунду)
+            await Task.Delay(600);
         }
 
         await _db.SaveChangesAsync();
 
-        return Ok(new ShuffleResponse(true, participants.Count, emailsSent));
+        string? note = null;
+        if (emailsSent < participants.Count)
+        {
+            note = $"Надіслано {emailsSent} з {participants.Count} листів. На безкоштовному тарифі Resend (без власного домену) надсилання дозволено лише на ваш зареєстрований email ({room.HostEmail}). Для розсилки іншим учасникам підтвердіть власний домен на resend.com/domains.";
+        }
+
+        return Ok(new ShuffleResponse(true, participants.Count, emailsSent, note));
     }
 }
