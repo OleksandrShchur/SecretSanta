@@ -128,6 +128,14 @@ window.SecretSanta = window.SecretSanta || {};
         // ==========================================
         // Create Room
         // ==========================================
+        const hostParticipatesCb = document.getElementById('create-host-participates');
+        const hostWishlistGroup = document.getElementById('create-host-wishlist-group');
+        if (hostParticipatesCb && hostWishlistGroup) {
+            hostParticipatesCb.addEventListener('change', () => {
+                hostWishlistGroup.classList.toggle('is-hidden', !hostParticipatesCb.checked);
+            });
+        }
+
         createRoomForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const submitBtn = createRoomForm.querySelector('button[type="submit"]');
@@ -135,9 +143,12 @@ window.SecretSanta = window.SecretSanta || {};
             submitBtn.textContent = 'Створюємо кімнату...';
 
             const title = document.getElementById('create-room-title').value.trim();
-            const hostName = document.getElementById('create-host-name').value.trim();
+            const firstName = document.getElementById('create-host-first-name').value.trim();
+            const lastName = document.getElementById('create-host-last-name').value.trim();
+            const hostName = `${firstName} ${lastName}`.trim();
             const hostEmail = document.getElementById('create-host-email').value.trim();
-            const hostParticipates = document.getElementById('create-host-participates').checked;
+            const hostParticipates = hostParticipatesCb ? hostParticipatesCb.checked : false;
+            const hostWishlist = document.getElementById('create-host-wishlist')?.value.trim() || '';
 
             try {
                 const { room, adminToken } = await backend.createRoom({
@@ -147,15 +158,12 @@ window.SecretSanta = window.SecretSanta || {};
                 });
 
                 if (hostParticipates) {
-                    const names = hostName.split(' ');
-                    const firstName = names[0] || hostName;
-                    const lastName = names.slice(1).join(' ') || '';
                     await backend.addParticipant({
                         roomId: room.id,
                         firstName,
                         lastName,
                         email: hostEmail,
-                        wishlist: ''
+                        wishlist: hostWishlist
                     });
                 }
 

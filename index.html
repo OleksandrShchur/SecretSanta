@@ -119,13 +119,18 @@
 
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="create-host-name">Ваше ім'я та прізвище (Хост) *</label>
-                            <input type="text" id="create-host-name" placeholder="Олександр Щур" required>
+                            <label for="create-host-first-name">Ваше ім'я (Хост) *</label>
+                            <input type="text" id="create-host-first-name" placeholder="Олександр" required>
                         </div>
                         <div class="form-group">
-                            <label for="create-host-email">Ваш Email *</label>
-                            <input type="email" id="create-host-email" placeholder="host@example.com" required>
+                            <label for="create-host-last-name">Ваше прізвище *</label>
+                            <input type="text" id="create-host-last-name" placeholder="Щур" required>
                         </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="create-host-email">Ваш Email *</label>
+                        <input type="email" id="create-host-email" placeholder="host@example.com" required>
                     </div>
 
                     <div class="form-checkbox">
@@ -133,6 +138,11 @@
                             <input type="checkbox" id="create-host-participates" checked>
                             Я також беру участь у жеребкуванні як учасник
                         </label>
+                    </div>
+
+                    <div id="create-host-wishlist-group" class="form-group">
+                        <label for="create-host-wishlist">Ваші побажання до подарунка (опціонально)</label>
+                        <textarea id="create-host-wishlist" rows="3" placeholder="Що ви любите, які хобі, розмір одягу або чого краще НЕ дарувати..."></textarea>
                     </div>
 
                     <button type="submit" class="btn-primary-lg">Створити кімнату ➔</button>
