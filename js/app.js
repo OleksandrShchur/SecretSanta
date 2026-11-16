@@ -129,6 +129,10 @@
         document.getElementById('reset-btn').addEventListener('click', resetAll);
 
         sync();
+
+        if (window.SecretSanta.initRoomModule) {
+            window.SecretSanta.initRoomModule();
+        }
     }
 
     boot();
