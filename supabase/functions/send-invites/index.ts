@@ -67,11 +67,14 @@ serve(async (req) => {
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const resendApiKey = Deno.env.get("RESEND_API_KEY");
+    const mailjetApiKey = Deno.env.get("MAILJET_API_KEY");
+    const mailjetApiSecret = Deno.env.get("MAILJET_API_SECRET");
+    const mailjetSenderEmail = Deno.env.get("MAILJET_SENDER_EMAIL") || Deno.env.get("MAILJET_FROM_EMAIL");
+    const mailjetSenderName = Deno.env.get("MAILJET_SENDER_NAME") || "Таємний Санта";
 
-    if (!resendApiKey) {
+    if (!mailjetApiKey || !mailjetApiSecret || !mailjetSenderEmail) {
       return new Response(
-        JSON.stringify({ error: "Ключ RESEND_API_KEY не налаштовано на сервері." }),
+        JSON.stringify({ error: "Ключі MAILJET_API_KEY, MAILJET_API_SECRET або MAILJET_SENDER_EMAIL не налаштовано на сервері." }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -115,25 +118,44 @@ serve(async (req) => {
       if (!cleanEmail) continue;
 
       try {
-        const res = await fetch("https://api.resend.com/emails", {
+        const auth = btoa(`${mailjetApiKey}:${mailjetApiSecret}`);
+        const res = await fetch("https://api.mailjet.com/v3.1/send", {
           method: "POST",
           headers: {
-            "Authorization": `Bearer ${resendApiKey}`,
+            "Authorization": `Basic ${auth}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            from: "Таємний Санта <santa@resend.dev>",
-            to: [cleanEmail],
-            subject: `🎄 Запрошення: Таємний Санта «${room.title}»`,
-            html: buildInviteEmailHtml(room.title, room.host_name, inviteUrl),
+            Messages: [
+              {
+                From: {
+                  Email: mailjetSenderEmail,
+                  Name: mailjetSenderName,
+                },
+                To: [
+                  {
+                    Email: cleanEmail,
+                  },
+                ],
+                Subject: `🎄 Запрошення: Таємний Санта «${room.title}»`,
+                HTMLPart: buildInviteEmailHtml(room.title, room.host_name, inviteUrl),
+              },
+            ],
           }),
         });
 
         if (res.ok) {
-          sent++;
+          const resData = await res.json();
+          const firstMsg = resData?.Messages?.[0];
+          if (firstMsg?.Status === "error") {
+            const errDetail = firstMsg?.Errors?.map((e: any) => e.ErrorMessage).join("; ") || "Mailjet error";
+            errors.push(`${cleanEmail}: ${errDetail}`);
+          } else {
+            sent++;
+          }
         } else {
           const errData = await res.json();
-          errors.push(`${cleanEmail}: ${errData.message || res.statusText}`);
+          errors.push(`${cleanEmail}: ${errData.ErrorMessage || res.statusText}`);
         }
       } catch (e) {
         errors.push(`${cleanEmail}: ${String(e)}`);

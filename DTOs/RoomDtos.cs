@@ -3,8 +3,9 @@ namespace SecretSanta.DTOs;
 public record CreateRoomRequest(
     string Title,
     string HostFirstName,
-    string HostLastName,
-    string HostEmail,
+    string? HostLastName,
+    long HostTelegramId,
+    string? HostUsername,
     bool HostParticipates,
     string? HostWishlist
 );
@@ -14,6 +15,7 @@ public record RoomPublicDto(
     string Title,
     string HostName,
     string Status,
+    int ParticipantCount,
     DateTime CreatedAt
 );
 
@@ -22,7 +24,8 @@ public record ParticipantDto(
     Guid RoomId,
     string FirstName,
     string LastName,
-    string Email,
+    long TelegramId,
+    string? TelegramUsername,
     string? Wishlist,
     DateTime CreatedAt
 );
@@ -37,7 +40,8 @@ public record RoomAdminDto(
     Guid Id,
     string Title,
     string HostName,
-    string HostEmail,
+    long HostTelegramId,
+    string? HostUsername,
     string AdminToken,
     string Status,
     DateTime CreatedAt,
@@ -47,8 +51,9 @@ public record RoomAdminDto(
 
 public record CreateParticipantRequest(
     string FirstName,
-    string LastName,
-    string Email,
+    string? LastName,
+    long TelegramId,
+    string? TelegramUsername,
     string? Wishlist
 );
 
@@ -56,11 +61,22 @@ public record RestrictionItem(Guid GiverId, Guid ReceiverId);
 
 public record SaveRestrictionsRequest(List<RestrictionItem> Restrictions);
 
-public record SendInvitesRequest(List<string> Emails, string InviteUrl);
+public record MyAssignmentDto(
+    string RoomTitle,
+    string ReceiverFirstName,
+    string ReceiverLastName,
+    string? ReceiverUsername,
+    string? ReceiverWishlist
+);
 
 public record ShuffleResponse(
     bool Success,
     int TotalParticipants,
-    int EmailsSent,
+    int NotificationsSent,
     string? ErrorMessage = null
+);
+
+public record TelegramConfigDto(
+    string BotUsername,
+    bool Configured
 );

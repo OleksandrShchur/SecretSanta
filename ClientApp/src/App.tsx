@@ -6,27 +6,32 @@ import { OfflineGenerator } from './components/OfflineGenerator';
 import { CreateRoom } from './components/CreateRoom';
 import { HostDashboard } from './components/HostDashboard';
 import { JoinRoom } from './components/JoinRoom';
+import { initTelegramApp, getTelegramStartParam, triggerHaptic } from './telegram';
 import './App.css';
 
 export const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'offline' | 'online'>('offline');
+  const [activeTab, setActiveTab] = useState<'offline' | 'online'>('online');
   const [currentRoomId, setCurrentRoomId] = useState<string | null>(null);
   const [currentAdminToken, setCurrentAdminToken] = useState<string | null>(null);
 
   useEffect(() => {
+    initTelegramApp();
+
+    const startParam = getTelegramStartParam();
     const params = new URLSearchParams(window.location.search);
-    const room = params.get('room');
     const admin = params.get('admin');
     const tab = params.get('tab');
 
-    if (room && admin) {
-      setCurrentRoomId(room);
+    if (startParam && admin) {
+      setCurrentRoomId(startParam);
       setCurrentAdminToken(admin);
       setActiveTab('online');
-    } else if (room) {
-      setCurrentRoomId(room);
+    } else if (startParam) {
+      setCurrentRoomId(startParam);
       setActiveTab('online');
-    } else if (tab === 'online') {
+    } else if (tab === 'offline') {
+      setActiveTab('offline');
+    } else {
       setActiveTab('online');
     }
   }, []);
@@ -36,15 +41,16 @@ export const App: React.FC = () => {
     setCurrentRoomId(null);
     setCurrentAdminToken(null);
     const url = new URL(window.location.href);
-    url.search = tab === 'online' ? '?tab=online' : '';
+    url.search = tab === 'offline' ? '?tab=offline' : '';
     window.history.pushState({}, '', url.toString());
   };
 
   const handleGoHome = () => {
+    triggerHaptic('light');
     setCurrentRoomId(null);
     setCurrentAdminToken(null);
     const url = new URL(window.location.href);
-    url.search = activeTab === 'online' ? '?tab=online' : '';
+    url.search = activeTab === 'offline' ? '?tab=offline' : '';
     window.history.pushState({}, '', url.toString());
   };
 
@@ -52,7 +58,7 @@ export const App: React.FC = () => {
     setCurrentRoomId(roomId);
     setCurrentAdminToken(adminToken);
     const url = new URL(window.location.href);
-    url.search = `?tab=online&room=${roomId}&admin=${adminToken}`;
+    url.search = `?room=${roomId}&admin=${adminToken}`;
     window.history.pushState({}, '', url.toString());
   };
 
@@ -91,7 +97,7 @@ export const App: React.FC = () => {
               aria-label="Повернутися до вибору режимів"
             >
               <ArrowLeft size={16} />
-              <span>Всі режими</span>
+              <span>На головну</span>
             </button>
             <span className="room-nav-pill">
               {currentAdminToken ? '👑 Панель організатора' : '🎁 Кімната учасника'}
@@ -102,7 +108,7 @@ export const App: React.FC = () => {
       </main>
 
       <footer className="christmas-footer">
-        <p>З любов'ю до новорічних свят 🎅🎄 | Організатор Таємного Санти</p>
+        <p>Telegram Mini App 🎅🎄 | Організатор Таємного Санти</p>
       </footer>
     </div>
   );

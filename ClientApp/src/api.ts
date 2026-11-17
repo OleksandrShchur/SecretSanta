@@ -1,10 +1,12 @@
 import type {
   CreateParticipantData,
   CreateRoomData,
+  MyAssignment,
   Participant,
   RoomAdmin,
   RoomPublic,
   ShuffleResponse,
+  TelegramConfig,
 } from './types';
 
 const API_BASE = '/api/rooms';
@@ -40,7 +42,10 @@ export async function getRoomAdmin(id: string, adminToken: string): Promise<Room
   return res.json();
 }
 
-export async function addParticipant(roomId: string, data: CreateParticipantData): Promise<Participant> {
+export async function addParticipant(
+  roomId: string,
+  data: CreateParticipantData
+): Promise<Participant> {
   const res = await fetch(`${API_BASE}/${roomId}/participants`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -87,27 +92,6 @@ export async function saveRestrictions(
   }
 }
 
-export async function sendInvites(
-  roomId: string,
-  adminToken: string,
-  emails: string[],
-  inviteUrl: string
-): Promise<{ sentCount: number }> {
-  const res = await fetch(
-    `${API_BASE}/${roomId}/invites?adminToken=${encodeURIComponent(adminToken)}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ emails, inviteUrl }),
-    }
-  );
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(err || 'Помилка відправки запрошень');
-  }
-  return res.json();
-}
-
 export async function performShuffle(roomId: string, adminToken: string): Promise<ShuffleResponse> {
   const res = await fetch(
     `${API_BASE}/${roomId}/shuffle?adminToken=${encodeURIComponent(adminToken)}`,
@@ -118,4 +102,23 @@ export async function performShuffle(roomId: string, adminToken: string): Promis
     throw new Error(err || 'Помилка жеребкування');
   }
   return res.json();
+}
+
+export async function getMyAssignment(roomId: string, telegramId: number): Promise<MyAssignment> {
+  const res = await fetch(`${API_BASE}/${roomId}/my-assignment?telegramId=${telegramId}`);
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(err || 'Не вдалося отримати підопічного');
+  }
+  return res.json();
+}
+
+export async function getTelegramConfig(): Promise<TelegramConfig> {
+  try {
+    const res = await fetch('/api/telegram/config');
+    if (!res.ok) throw new Error('Помилка завантаження конфігурації');
+    return res.json();
+  } catch {
+    return { botUsername: '', configured: false };
+  }
 }

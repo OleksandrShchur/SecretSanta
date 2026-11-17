@@ -257,7 +257,7 @@ window.SecretSanta = window.SecretSanta || {};
 
                 const emailEl = document.createElement('div');
                 emailEl.className = 'participant-email-text';
-                emailEl.textContent = p.email;
+                emailEl.textContent = p.telegram_username ? `@${p.telegram_username}` : (p.telegram_id ? `ID: ${p.telegram_id}` : (p.email || ''));
 
                 infoDiv.append(nameEl, emailEl);
 
@@ -433,11 +433,11 @@ window.SecretSanta = window.SecretSanta || {};
                 if (result.mock) {
                     alert(
                         '🎉 [Демо-режим] Жеребкування успішно проведено!\n\n' +
-                        'Оскільки Supabase Edge Functions та Resend ще не налаштовані, результати збережено локально. ' +
-                        'При підключенні Resend API кожен учасник автоматично отримує святковий лист на пошту.'
+                        'Оскільки Telegram Bot ще не налаштовано, результати збережено локально. ' +
+                        'При підключенні токена бота кожен учасник автоматично отримує святкове повідомлення в Telegram.'
                     );
                 } else {
-                    alert(`🎉 Жеребкування успішно проведено! Розіслано ${result.emailsSent} листів учасникам.`);
+                    alert(`🎉 Жеребкування успішно проведено! Розіслано сповіщення всім учасникам у Telegram.`);
                 }
 
                 currentRoom.status = 'shuffled';
