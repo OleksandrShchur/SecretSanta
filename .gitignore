@@ -1,22 +1,28 @@
-# Environment variables & secrets
-.env
-.env.*
-!.env.example
-*.local
+## .NET Core
+bin/
+obj/
+publish/
+*.user
+*.suo
+.vs/
+.vscode/
 
-# Supabase CLI local artifacts
-.supabase/
-supabase/.temp/
-
-# Dependencies & logs
+## Node / Vite
 node_modules/
+ClientApp/node_modules/
+ClientApp/dist/
+ClientApp/dist-ssr/
+*.local
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# OS files
+## OS files
 .DS_Store
 Thumbs.db
 [Dd]esktop.ini
 $RECYCLE.BIN/
 *.lnk
+appsettings.Development.json
+appsettings.Production.json
+Properties/PublishProfiles
