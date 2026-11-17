@@ -162,19 +162,6 @@ export const JoinRoom: React.FC<JoinRoomProps> = ({ roomId, onGoHome }) => {
         </p>
       </div>
 
-      {/* Telegram User Connected Badge */}
-      <div className="tg-user-banner">
-        <div className="tg-user-avatar">
-          {firstName.charAt(0).toUpperCase()}
-        </div>
-        <div className="tg-user-info">
-          <span className="tg-user-label">Ваш акаунт Telegram:</span>
-          <span className="tg-user-name">
-            {firstName} {lastName} {tgUser.username ? `(@${tgUser.username})` : `(ID: ${tgUser.id})`}
-          </span>
-        </div>
-      </div>
-
       {errorMsg && (
         <div className="alert-error" role="alert">
           <AlertCircle size={18} className="flex-shrink-0" />
