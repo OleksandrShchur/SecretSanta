@@ -358,7 +358,7 @@
 .room-form {
   display: flex;
   flex-direction: column;
-  gap: 0.875rem;
+  gap: 0.95rem;
   width: 100%;
 }
 
@@ -383,7 +383,7 @@
 .form-row {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 0.75rem;
+  gap: 0.95rem;
   width: 100%;
 }
 
@@ -391,6 +391,170 @@
   .form-row {
     grid-template-columns: 1fr 1fr;
   }
+}
+
+/* --------------------------------------------------------------------------
+   Floating Label Form Inputs (Outlined / Border Notch Pattern)
+   -------------------------------------------------------------------------- */
+.floating-field-group {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  margin-top: 0.45rem;
+  width: 100%;
+}
+
+.floating-input,
+.floating-textarea {
+  width: 100%;
+  min-width: 0;
+  padding: 0.95rem 0.95rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-family: inherit;
+  font-size: 16px;
+  color: var(--color-text);
+  background-color: #ffffff;
+  outline: none;
+  transition: border-color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+              background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  min-height: 52px;
+}
+
+.floating-textarea {
+  min-height: 96px;
+  padding-top: 1rem;
+  resize: vertical;
+  line-height: 1.45;
+}
+
+/* Idle Label: Sits centered inside input */
+.floating-label {
+  position: absolute;
+  left: 0.85rem;
+  top: 26px;
+  transform: translateY(-50%);
+  background-color: #ffffff;
+  padding: 0 0.35rem;
+  color: #64748b;
+  font-size: 0.92rem;
+  font-weight: 500;
+  pointer-events: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  z-index: 2;
+  border-radius: 4px;
+  transition: top 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+              transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+              font-size 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+              color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+              font-weight 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  user-select: none;
+  white-space: nowrap;
+  max-width: calc(100% - 1.7rem);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.floating-label-icon {
+  display: inline-flex;
+  align-items: center;
+  color: inherit;
+  flex-shrink: 0;
+}
+
+.required-star {
+  color: #dc2626;
+  font-weight: 700;
+}
+
+/* Textarea Idle Label */
+.floating-field-textarea .floating-label {
+  top: 1.45rem;
+  transform: translateY(-50%);
+}
+
+/* Floating State: Sits on the top border */
+.floating-field-group.is-floating .floating-label,
+.floating-field-group.is-focused .floating-label {
+  top: 0;
+  transform: translateY(-50%);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--color-heading-alt);
+}
+
+/* Focused input */
+.floating-field-group.is-focused .floating-input,
+.floating-field-group.is-focused .floating-textarea {
+  border-color: var(--color-heading-alt);
+  box-shadow: 0 0 0 3px rgba(22, 101, 52, 0.12);
+}
+
+/* Floating but not focused */
+.floating-field-group.is-floating:not(.is-focused):not(.has-error) .floating-label {
+  color: #475569;
+}
+
+.floating-field-group.is-floating:not(.is-focused):not(.has-error) .floating-input,
+.floating-field-group.is-floating:not(.is-focused):not(.has-error) .floating-textarea {
+  border-color: #cbd5e1;
+}
+
+/* Error State: Red border, red label, red focus ring */
+.floating-field-group.has-error .floating-input,
+.floating-field-group.has-error .floating-textarea {
+  border-color: #ef4444 !important;
+  background-color: #fffbfa;
+}
+
+.floating-field-group.has-error.is-focused .floating-input,
+.floating-field-group.has-error.is-focused .floating-textarea {
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15) !important;
+}
+
+.floating-field-group.has-error .floating-label {
+  color: #ef4444 !important;
+}
+
+/* Error Placeholder styling */
+.floating-field-group.has-error .floating-input::placeholder,
+.floating-field-group.has-error .floating-textarea::placeholder {
+  color: #ef4444;
+  opacity: 0.9;
+  font-size: 0.88rem;
+  font-weight: 500;
+}
+
+.floating-field-group.has-error .floating-input::-webkit-input-placeholder,
+.floating-field-group.has-error .floating-textarea::-webkit-input-placeholder {
+  color: #ef4444;
+  opacity: 0.9;
+  font-size: 0.88rem;
+  font-weight: 500;
+}
+
+/* Error message underneath the input */
+.field-error-message {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #dc2626;
+  margin-top: 0.35rem;
+  padding-left: 0.35rem;
+  line-height: 1.35;
+  animation: errorSlideIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.field-helper-text {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  margin-top: 0.3rem;
+  padding-left: 0.35rem;
 }
 
 /* CRITICAL: Font size 16px prevents iOS Safari from automatically zooming in */
@@ -696,6 +860,24 @@
   min-width: 0;
 }
 
+.dashboard-header-card {
+  position: relative;
+}
+
+.dashboard-top-menu {
+  position: absolute;
+  top: 0.85rem;
+  right: 0.85rem;
+  z-index: 20;
+}
+
+@media (min-width: 640px) {
+  .dashboard-top-menu {
+    top: 1.25rem;
+    right: 1.25rem;
+  }
+}
+
 .dashboard-header-top {
   display: flex;
   flex-direction: column;
@@ -714,6 +896,7 @@
 .dashboard-title-group {
   min-width: 0;
   flex: 1;
+  padding-right: 2.5rem;
 }
 
 .dashboard-title-group h2 {
@@ -1611,85 +1794,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.dev-mock-switcher {
-  position: relative;
-}
-
-.btn-mock-toggle {
-  background: #f8fafc;
-  border: 1px solid #cbd5e1;
-  color: #475569;
-  border-radius: var(--radius-full);
-  padding: 0.25rem 0.65rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  white-space: nowrap;
-  box-shadow: var(--shadow-sm);
-}
-
-.btn-mock-toggle:hover {
-  background: #f1f5f9;
-  color: #1e293b;
-  border-color: #94a3b8;
-}
-
-.dev-mock-dropdown {
-  position: absolute;
-  right: 0;
-  top: calc(100% + 6px);
-  background: #ffffff;
-  color: #1e293b;
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-xl);
-  padding: 0.5rem;
-  min-width: 220px;
-  z-index: 100;
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  border: 1px solid #e2e8f0;
-}
-
-.dropdown-title {
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: #64748b;
-  padding: 0.2rem 0.4rem;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.mock-user-item {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  text-align: left;
-  padding: 0.4rem 0.6rem;
-  border-radius: var(--radius-sm);
-  background: none;
-  border: none;
-  cursor: pointer;
-  transition: background 0.15s ease;
-  font-size: 0.82rem;
-}
-
-.mock-user-item:hover {
-  background: #f1f5f9;
-}
-
-.mock-user-item.active {
-  background: #ecfdf5;
-  color: #065f46;
-  font-weight: 700;
-}
-
-.mock-user-item span {
-  font-size: 0.74rem;
-  color: #64748b;
 }
 
 /* Telegram User Banner in Forms */

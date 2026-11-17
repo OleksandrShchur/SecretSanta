@@ -24,7 +24,7 @@ interface MyRoomsProps {
 }
 
 const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
-  collecting: { label: 'Збір учасників 🎅', className: 'status-pill-collecting' },
+  collecting: { label: 'Реєстрація відкрита 🎅', className: 'status-pill-collecting' },
   shuffled: { label: 'Жеребкування проведено 🎉', className: 'status-pill-shuffled' },
   closed: { label: 'Деактивовано 🔒', className: 'status-pill-closed' },
 };

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Users,
   Copy,
@@ -11,9 +11,9 @@ import {
   AlertCircle,
   CheckCircle2,
   Share2,
-  Key,
   MessageCircle,
   Power,
+  MoreVertical,
 } from 'lucide-react';
 import type { RoomAdmin, TelegramConfig } from '../types';
 import {
@@ -45,7 +45,6 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({ roomId, adminToken
 
   // Link copy
   const [copiedLink, setCopiedLink] = useState(false);
-  const [copiedAdminLink, setCopiedAdminLink] = useState(false);
   const [linkType, setLinkType] = useState<'tma' | 'web'>('tma');
 
   // Restrictions
@@ -56,6 +55,24 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({ roomId, adminToken
   const [shuffleSuccessMsg, setShuffleSuccessMsg] = useState<string | null>(null);
   const [deactivating, setDeactivating] = useState(false);
   const [deleting, setDeleting] = useState(false);
+
+  // Header 3-dots Menu
+  const [showHeaderMenu, setShowHeaderMenu] = useState(false);
+  const headerMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (headerMenuRef.current && !headerMenuRef.current.contains(e.target as Node)) {
+        setShowHeaderMenu(false);
+      }
+    };
+    if (showHeaderMenu) {
+      document.addEventListener('mousedown', handleOutsideClick);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick);
+    };
+  }, [showHeaderMenu]);
 
   useEffect(() => {
     getTelegramConfig().then(setTgConfig);
@@ -103,8 +120,6 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({ roomId, adminToken
 
   const inviteUrl = linkType === 'tma' && tmaInviteUrl ? tmaInviteUrl : webInviteUrl;
 
-  const adminUrl = window.location.href;
-
   const handleCopyLink = async () => {
     triggerHaptic('light');
     try {
@@ -120,17 +135,6 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({ roomId, adminToken
     triggerHaptic('light');
     const shareText = `Приєднуйтесь до гри «Таємний Санта» у кімнаті «${room?.title || ''}»! 🎅🎁 Відкривайте додаток та пишіть свої побажання:`;
     openTelegramShare(inviteUrl, shareText);
-  };
-
-  const handleCopyAdminLink = async () => {
-    triggerHaptic('light');
-    try {
-      await navigator.clipboard.writeText(adminUrl);
-      setCopiedAdminLink(true);
-      setTimeout(() => setCopiedAdminLink(false), 2000);
-    } catch {
-      alert('Ваше посилання організатора: ' + adminUrl);
-    }
   };
 
   const handleRemove = async (participantId: string, name: string) => {
@@ -265,6 +269,53 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({ roomId, adminToken
     <div className="dashboard-container">
       {/* Header Card */}
       <div className="card dashboard-header-card">
+        {/* Top-Right 3-dots Actions Menu */}
+        <div className="dashboard-top-menu" ref={headerMenuRef}>
+          <button
+            type="button"
+            className="btn-card-menu"
+            onClick={() => {
+              triggerHaptic('light');
+              setShowHeaderMenu((prev) => !prev);
+            }}
+            aria-label="Дії з кімнатою"
+            title="Опції кімнати"
+          >
+            <MoreVertical size={20} />
+          </button>
+
+          {showHeaderMenu && (
+            <div className="card-menu-dropdown animate-fade-in">
+              {room.status === 'collecting' && (
+                <button
+                  type="button"
+                  className="card-menu-item card-menu-item-warning"
+                  onClick={() => {
+                    setShowHeaderMenu(false);
+                    handleDeactivateRoom();
+                  }}
+                  disabled={deactivating}
+                >
+                  <Power size={15} />
+                  <span>{deactivating ? 'Деактивація...' : 'Деактивувати кімнату'}</span>
+                </button>
+              )}
+              <button
+                type="button"
+                className="card-menu-item card-menu-item-danger"
+                onClick={() => {
+                  setShowHeaderMenu(false);
+                  handleDeleteRoom();
+                }}
+                disabled={deleting}
+              >
+                <Trash2 size={15} />
+                <span>{deleting ? 'Видалення...' : 'Видалити кімнату'}</span>
+              </button>
+            </div>
+          )}
+        </div>
+
         <div className="dashboard-header-top">
           <div className="dashboard-title-group">
             <span className="badge-label">Панель організатора</span>
@@ -273,37 +324,20 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({ roomId, adminToken
           <div className="header-actions">
             <span
               className={`status-pill ${
-                isShuffled ? 'status-pill-shuffled' : isClosed ? 'status-pill-closed' : 'status-pill-collecting'
+                isShuffled
+                  ? 'status-pill-shuffled'
+                  : isClosed
+                  ? 'status-pill-closed'
+                  : 'status-pill-collecting'
               }`}
             >
-              {isShuffled ? 'Жеребкування проведено 🎉' : isClosed ? 'Деактивовано 🔒' : 'Збір учасників 🎅'}
+              {isShuffled
+                ? 'Жеребкування проведено 🎉'
+                : isClosed
+                ? 'Деактивовано 🔒'
+                : 'Реєстрація відкрита 🎅'}
             </span>
-            <button
-              type="button"
-              className="btn-icon"
-              onClick={() => fetchRoomData(true)}
-              title="Оновити список учасників"
-              aria-label="Оновити дані"
-            >
-              <RefreshCw size={18} className={isRefreshing ? 'spin' : ''} />
-            </button>
           </div>
-        </div>
-
-        {/* Secret Admin Link Tip */}
-        <div className="admin-link-tip">
-          <div className="admin-tip-text">
-            <Key size={16} className="text-gold flex-shrink-0" />
-            <span>Посилання для керування кімнатою (збережіть собі):</span>
-          </div>
-          <button
-            type="button"
-            className={`btn btn-sm ${copiedAdminLink ? 'btn-success' : 'btn-secondary'}`}
-            onClick={handleCopyAdminLink}
-          >
-            {copiedAdminLink ? <Check size={14} /> : <Copy size={14} />}
-            <span>{copiedAdminLink ? 'Скопійовано!' : 'Скопіювати'}</span>
-          </button>
         </div>
 
         {shuffleSuccessMsg && (
@@ -312,32 +346,6 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({ roomId, adminToken
             <span>{shuffleSuccessMsg}</span>
           </div>
         )}
-
-        {/* Room Management Actions */}
-        <div className="room-manage-actions">
-          {room.status === 'collecting' && (
-            <button
-              type="button"
-              className="btn btn-sm btn-outline btn-deactivate"
-              onClick={handleDeactivateRoom}
-              disabled={deactivating}
-              title="Деактивувати кімнату"
-            >
-              <Power size={14} />
-              <span>{deactivating ? 'Деактивація...' : 'Деактивувати кімнату'}</span>
-            </button>
-          )}
-          <button
-            type="button"
-            className="btn btn-sm btn-outline btn-delete"
-            onClick={handleDeleteRoom}
-            disabled={deleting}
-            title="Видалити кімнату"
-          >
-            <Trash2 size={14} />
-            <span>{deleting ? 'Видалення...' : 'Видалити кімнату'}</span>
-          </button>
-        </div>
       </div>
 
       {/* Host's Own Assignment Card (if shuffled and host participates) */}
