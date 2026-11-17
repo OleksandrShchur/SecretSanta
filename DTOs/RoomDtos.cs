@@ -78,5 +78,6 @@ public record ShuffleResponse(
 
 public record TelegramConfigDto(
     string BotUsername,
-    bool Configured
+    bool Configured,
+    string AppShortName = "app"
 );

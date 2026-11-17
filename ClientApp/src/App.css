@@ -767,6 +767,42 @@
 }
 
 /* Invite Block & Link Row */
+.invite-type-tabs {
+  display: flex;
+  gap: 0.35rem;
+  background: var(--color-surface-soft);
+  padding: 0.25rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  margin-bottom: 0.25rem;
+}
+
+.invite-type-tab {
+  flex: 1;
+  padding: 0.45rem 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: center;
+}
+
+.invite-type-tab:hover:not(.active) {
+  color: var(--color-text);
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.invite-type-tab.active {
+  background: #ffffff;
+  color: var(--color-heading);
+  box-shadow: var(--shadow-sm);
+  font-weight: 700;
+}
+
 .invite-block {
   display: flex;
   flex-direction: column;

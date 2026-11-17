@@ -43,6 +43,7 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({ roomId, adminToken
   // Link copy
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedAdminLink, setCopiedAdminLink] = useState(false);
+  const [linkType, setLinkType] = useState<'tma' | 'web'>('tma');
 
   // Restrictions
   const [showRestrictions, setShowRestrictions] = useState(false);
@@ -87,10 +88,15 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({ roomId, adminToken
     return () => clearInterval(interval);
   }, [room?.status, fetchRoomData]);
 
-  // Generate Telegram Mini App invite link
-  const inviteUrl = tgConfig.botUsername
-    ? `https://t.me/${tgConfig.botUsername}/app?startapp=${roomId}`
-    : `${window.location.origin}?tab=online&room=${roomId}`;
+  // Generate Telegram Mini App and Web invite links
+  const botUsername = tgConfig.botUsername?.replace(/^@/, '').trim();
+  const appName = tgConfig.appShortName?.trim() || 'app';
+  const tmaInviteUrl = botUsername
+    ? `https://t.me/${botUsername}/${appName}?startapp=${roomId}`
+    : '';
+  const webInviteUrl = `${window.location.origin}?tab=online&room=${roomId}`;
+
+  const inviteUrl = linkType === 'tma' && tmaInviteUrl ? tmaInviteUrl : webInviteUrl;
 
   const adminUrl = window.location.href;
 
@@ -285,8 +291,31 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({ roomId, adminToken
           </div>
 
           <div className="invite-block">
+            <div className="invite-type-tabs" role="tablist">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={linkType === 'tma'}
+                className={`invite-type-tab ${linkType === 'tma' ? 'active' : ''}`}
+                onClick={() => setLinkType('tma')}
+              >
+                📱 Telegram Mini App
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={linkType === 'web'}
+                className={`invite-type-tab ${linkType === 'web' ? 'active' : ''}`}
+                onClick={() => setLinkType('web')}
+              >
+                🌐 Веб-посилання (браузер)
+              </button>
+            </div>
+
             <label className="field-label" htmlFor="invite-url-field">
-              Telegram-посилання для запрошення:
+              {linkType === 'tma'
+                ? 'Telegram-посилання (відкриває Mini App у Telegram):'
+                : 'Пряме веб-посилання (відкриває в будь-якому браузері):'}
             </label>
             <div className="invite-link-row">
               <input

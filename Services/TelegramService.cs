@@ -26,8 +26,8 @@ public class TelegramService : ITelegramService
         Environment.GetEnvironmentVariable("TELEGRAM_BOT_TOKEN");
 
     public string? BotUsername =>
-        _configuration["Telegram:BotUsername"] ??
-        Environment.GetEnvironmentVariable("TELEGRAM_BOT_USERNAME");
+        (_configuration["Telegram:BotUsername"] ??
+        Environment.GetEnvironmentVariable("TELEGRAM_BOT_USERNAME"))?.Trim().TrimStart('@');
 
     public bool IsConfigured => !string.IsNullOrWhiteSpace(BotToken);
 
