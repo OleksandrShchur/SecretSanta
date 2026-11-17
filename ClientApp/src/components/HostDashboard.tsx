@@ -285,29 +285,38 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({ roomId, adminToken
           </div>
 
           <div className="invite-block">
-            <label className="field-label">Telegram-посилання для запрошення:</label>
-            <div className="copy-row">
-              <input type="text" readOnly value={inviteUrl} className="input-text" />
-              <div className="invite-actions-wrap">
-                <button
-                  type="button"
-                  className="btn btn-primary btn-share"
-                  onClick={handleShareTelegram}
-                  title="Поділитися в Telegram"
-                >
-                  <Share2 size={16} />
-                  <span>Поділитись у Telegram</span>
-                </button>
-                <button
-                  type="button"
-                  className={`btn ${copiedLink ? 'btn-success' : 'btn-secondary'}`}
-                  onClick={handleCopyLink}
-                >
-                  {copiedLink ? <Check size={16} /> : <Copy size={16} />}
-                  <span>{copiedLink ? 'Скопійовано!' : 'Копіювати'}</span>
-                </button>
-              </div>
+            <label className="field-label" htmlFor="invite-url-field">
+              Telegram-посилання для запрошення:
+            </label>
+            <div className="invite-link-row">
+              <input
+                id="invite-url-field"
+                type="text"
+                readOnly
+                value={inviteUrl}
+                className="input-text invite-input"
+                onClick={(e) => (e.target as HTMLInputElement).select()}
+              />
+              <button
+                type="button"
+                className={`btn ${copiedLink ? 'btn-success' : 'btn-secondary'} btn-copy`}
+                onClick={handleCopyLink}
+                title="Скопіювати посилання"
+              >
+                {copiedLink ? <Check size={16} /> : <Copy size={16} />}
+                <span>{copiedLink ? 'Скопійовано!' : 'Копіювати'}</span>
+              </button>
             </div>
+
+            <button
+              type="button"
+              className="btn btn-primary btn-share-telegram"
+              onClick={handleShareTelegram}
+              title="Поділитися в Telegram"
+            >
+              <Share2 size={18} />
+              <span>Поділитись у Telegram</span>
+            </button>
           </div>
         </div>
       )}
