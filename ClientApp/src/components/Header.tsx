@@ -31,17 +31,26 @@ export const Header: React.FC<HeaderProps> = ({ onGoHome }) => {
     setShowUserSwitcher(false);
   };
 
+  const displayName = [currentUser.first_name, currentUser.last_name].filter(Boolean).join(' ');
+
   return (
     <header className="christmas-header">
       <div
         className={`header-main-content ${onGoHome ? 'is-clickable' : ''}`}
         onClick={onGoHome}
         title={onGoHome ? 'На головну' : undefined}
+        role={onGoHome ? 'button' : undefined}
+        tabIndex={onGoHome ? 0 : undefined}
+        onKeyDown={(e) => {
+          if (onGoHome && (e.key === 'Enter' || e.key === ' ')) {
+            e.preventDefault();
+            onGoHome();
+          }
+        }}
       >
         <img src="/tree.svg" className="tree left" alt="Ялинка" aria-hidden="true" />
         <div className="header-title-wrap">
           <h1>Таємний Санта</h1>
-          <p className="header-subtitle">Telegram Mini App 🎅🎁</p>
         </div>
         <img src="/tree.svg" className="tree right" alt="Ялинка" aria-hidden="true" />
       </div>
@@ -49,9 +58,9 @@ export const Header: React.FC<HeaderProps> = ({ onGoHome }) => {
       {/* User Status Bar */}
       <div className="header-tg-bar">
         <div className="tg-active-chip">
-          <span className="tg-dot"></span>
+          <span className="tg-dot" aria-hidden="true"></span>
           <span className="tg-name">
-            {currentUser.first_name} {currentUser.username ? `(@${currentUser.username})` : `(ID: ${currentUser.id})`}
+            {displayName} {currentUser.username ? `(@${currentUser.username})` : `(ID: ${currentUser.id})`}
           </span>
         </div>
 

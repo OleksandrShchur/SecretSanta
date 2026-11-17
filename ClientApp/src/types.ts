@@ -73,6 +73,7 @@ export interface ShuffleResponse {
 export interface TelegramConfig {
   botUsername: string;
   configured: boolean;
+  appShortName?: string;
 }
 
 export interface TelegramUser {

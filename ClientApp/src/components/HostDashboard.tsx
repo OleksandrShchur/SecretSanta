@@ -43,6 +43,7 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({ roomId, adminToken
   // Link copy
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedAdminLink, setCopiedAdminLink] = useState(false);
+  const [linkType, setLinkType] = useState<'tma' | 'web'>('tma');
 
   // Restrictions
   const [showRestrictions, setShowRestrictions] = useState(false);
@@ -87,10 +88,15 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({ roomId, adminToken
     return () => clearInterval(interval);
   }, [room?.status, fetchRoomData]);
 
-  // Generate Telegram Mini App invite link
-  const inviteUrl = tgConfig.botUsername
-    ? `https://t.me/${tgConfig.botUsername}/app?startapp=${roomId}`
-    : `${window.location.origin}?tab=online&room=${roomId}`;
+  // Generate Telegram Mini App and Web invite links
+  const botUsername = tgConfig.botUsername?.replace(/^@/, '').trim();
+  const appName = tgConfig.appShortName?.trim() || 'app';
+  const tmaInviteUrl = botUsername
+    ? `https://t.me/${botUsername}/${appName}?startapp=${roomId}`
+    : '';
+  const webInviteUrl = `${window.location.origin}?tab=online&room=${roomId}`;
+
+  const inviteUrl = linkType === 'tma' && tmaInviteUrl ? tmaInviteUrl : webInviteUrl;
 
   const adminUrl = window.location.href;
 
@@ -285,29 +291,61 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({ roomId, adminToken
           </div>
 
           <div className="invite-block">
-            <label className="field-label">Telegram-посилання для запрошення:</label>
-            <div className="copy-row">
-              <input type="text" readOnly value={inviteUrl} className="input-text" />
-              <div className="invite-actions-wrap">
-                <button
-                  type="button"
-                  className="btn btn-primary btn-share"
-                  onClick={handleShareTelegram}
-                  title="Поділитися в Telegram"
-                >
-                  <Share2 size={16} />
-                  <span>Поділитись у Telegram</span>
-                </button>
-                <button
-                  type="button"
-                  className={`btn ${copiedLink ? 'btn-success' : 'btn-secondary'}`}
-                  onClick={handleCopyLink}
-                >
-                  {copiedLink ? <Check size={16} /> : <Copy size={16} />}
-                  <span>{copiedLink ? 'Скопійовано!' : 'Копіювати'}</span>
-                </button>
-              </div>
+            <div className="invite-type-tabs" role="tablist">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={linkType === 'tma'}
+                className={`invite-type-tab ${linkType === 'tma' ? 'active' : ''}`}
+                onClick={() => setLinkType('tma')}
+              >
+                📱 Telegram Mini App
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={linkType === 'web'}
+                className={`invite-type-tab ${linkType === 'web' ? 'active' : ''}`}
+                onClick={() => setLinkType('web')}
+              >
+                🌐 Веб-посилання (браузер)
+              </button>
             </div>
+
+            <label className="field-label" htmlFor="invite-url-field">
+              {linkType === 'tma'
+                ? 'Telegram-посилання (відкриває Mini App у Telegram):'
+                : 'Пряме веб-посилання (відкриває в будь-якому браузері):'}
+            </label>
+            <div className="invite-link-row">
+              <input
+                id="invite-url-field"
+                type="text"
+                readOnly
+                value={inviteUrl}
+                className="input-text invite-input"
+                onClick={(e) => (e.target as HTMLInputElement).select()}
+              />
+              <button
+                type="button"
+                className={`btn ${copiedLink ? 'btn-success' : 'btn-secondary'} btn-copy`}
+                onClick={handleCopyLink}
+                title="Скопіювати посилання"
+              >
+                {copiedLink ? <Check size={16} /> : <Copy size={16} />}
+                <span>{copiedLink ? 'Скопійовано!' : 'Копіювати'}</span>
+              </button>
+            </div>
+
+            <button
+              type="button"
+              className="btn btn-primary btn-share-telegram"
+              onClick={handleShareTelegram}
+              title="Поділитися в Telegram"
+            >
+              <Share2 size={18} />
+              <span>Поділитись у Telegram</span>
+            </button>
           </div>
         </div>
       )}

@@ -26,9 +26,11 @@ public class TelegramController : ControllerBase
     [HttpGet("config")]
     public ActionResult<TelegramConfigDto> GetConfig()
     {
+        string appShortName = _configuration["Telegram:AppShortName"] ?? "app";
         return Ok(new TelegramConfigDto(
             _telegramService.BotUsername ?? string.Empty,
-            _telegramService.IsConfigured
+            _telegramService.IsConfigured,
+            appShortName
         ));
     }
 

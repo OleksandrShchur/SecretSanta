@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import Snowfall from 'react-snowfall';
 import { ArrowLeft } from 'lucide-react';
 import { Header } from './components/Header';
 import { Navbar } from './components/Navbar';
@@ -83,34 +84,48 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="app-container">
-      <Header onGoHome={currentRoomId ? handleGoHome : undefined} />
-      <main className="main-content">
-        {!currentRoomId ? (
-          <Navbar activeTab={activeTab} onTabChange={handleTabChange} />
-        ) : (
-          <div className="room-nav-bar">
-            <button
-              type="button"
-              className="btn-nav-back"
-              onClick={handleGoHome}
-              aria-label="Повернутися до вибору режимів"
-            >
-              <ArrowLeft size={16} />
-              <span>На головну</span>
-            </button>
-            <span className="room-nav-pill">
-              {currentAdminToken ? '👑 Панель організатора' : '🎁 Кімната учасника'}
-            </span>
-          </div>
-        )}
-        {renderContent()}
-      </main>
+    <>
+      <Snowfall
+        style={{
+          position: 'fixed',
+          width: '100%',
+          height: '100%',
+          top: 0,
+          left: 0,
+          zIndex: 50,
+          pointerEvents: 'none',
+        }}
+        snowflakeCount={150}
+      />
+      <div className="app-container">
+        <Header onGoHome={currentRoomId ? handleGoHome : undefined} />
+        <main className="main-content">
+          {!currentRoomId ? (
+            <Navbar activeTab={activeTab} onTabChange={handleTabChange} />
+          ) : (
+            <div className="room-nav-bar">
+              <button
+                type="button"
+                className="btn-nav-back"
+                onClick={handleGoHome}
+                aria-label="Повернутися до вибору режимів"
+              >
+                <ArrowLeft size={16} />
+                <span>На головну</span>
+              </button>
+              <span className="room-nav-pill">
+                {currentAdminToken ? '👑 Панель організатора' : '🎁 Кімната учасника'}
+              </span>
+            </div>
+          )}
+          {renderContent()}
+        </main>
 
-      <footer className="christmas-footer">
-        <p>Telegram Mini App 🎅🎄 | Організатор Таємного Санти</p>
-      </footer>
-    </div>
+        <footer className="christmas-footer">
+          <p>Telegram Mini App 🎅🎄 | Організатор Таємного Санти</p>
+        </footer>
+      </div>
+    </>
   );
 };
 
