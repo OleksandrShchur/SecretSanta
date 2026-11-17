@@ -1,16 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import {
   User,
-  Mail,
   Gift,
   CheckCircle2,
   AlertCircle,
   ArrowRight,
   ArrowLeft,
   Sparkles,
+  RefreshCw,
 } from 'lucide-react';
 import type { RoomPublic } from '../types';
 import { getRoom, addParticipant } from '../api';
+import { getTelegramUser, triggerHaptic } from '../telegram';
+import { MyAssignmentCard } from './MyAssignmentCard';
 
 interface JoinRoomProps {
   roomId: string;
@@ -18,14 +20,15 @@ interface JoinRoomProps {
 }
 
 export const JoinRoom: React.FC<JoinRoomProps> = ({ roomId, onGoHome }) => {
+  const tgUser = getTelegramUser();
+
   const [room, setRoom] = useState<RoomPublic | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [email, setEmail] = useState('');
+  const [firstName, setFirstName] = useState(tgUser.first_name || '');
+  const [lastName, setLastName] = useState(tgUser.last_name || '');
   const [wishlist, setWishlist] = useState('');
   const [joined, setJoined] = useState(false);
 
@@ -40,8 +43,9 @@ export const JoinRoom: React.FC<JoinRoomProps> = ({ roomId, onGoHome }) => {
     e.preventDefault();
     setErrorMsg(null);
 
-    if (!firstName.trim() || !email.trim()) {
-      setErrorMsg("Будь ласка, введіть ваше ім'я та email.");
+    if (!firstName.trim()) {
+      setErrorMsg("Будь ласка, введіть ваше ім'я.");
+      triggerHaptic('warning');
       return;
     }
 
@@ -49,12 +53,15 @@ export const JoinRoom: React.FC<JoinRoomProps> = ({ roomId, onGoHome }) => {
     try {
       await addParticipant(roomId, {
         firstName: firstName.trim(),
-        lastName: lastName.trim(),
-        email: email.trim(),
-        wishlist: wishlist.trim(),
+        lastName: lastName.trim() || undefined,
+        telegramId: tgUser.id,
+        telegramUsername: tgUser.username,
+        wishlist: wishlist.trim() || undefined,
       });
+      triggerHaptic('success');
       setJoined(true);
     } catch (err: any) {
+      triggerHaptic('error');
       setErrorMsg(err.message || 'Помилка реєстрації');
     } finally {
       setSubmitting(false);
@@ -64,6 +71,7 @@ export const JoinRoom: React.FC<JoinRoomProps> = ({ roomId, onGoHome }) => {
   if (loading) {
     return (
       <div className="card loading-card">
+        <RefreshCw size={28} className="spin text-gold mx-auto" />
         <p>Завантаження інформації про кімнату...</p>
       </div>
     );
@@ -86,17 +94,22 @@ export const JoinRoom: React.FC<JoinRoomProps> = ({ roomId, onGoHome }) => {
     );
   }
 
+  // If already shuffled, show the assignment reveal card
   if (room.status === 'shuffled') {
     return (
-      <div className="card text-center">
-        <h2>Жеребкування вже завершено 🎅</h2>
-        <p className="card-desc">
-          На жаль, прийом заявок у кімнату «{room.title}» вже закрито, оскільки організатор провів
-          розподіл подарунків і розіслав листи.
-        </p>
+      <div className="space-y-4">
+        <div className="card text-center">
+          <h2>Жеребкування проведено! 🎅</h2>
+          <p className="card-desc">
+            У кімнаті «{room.title}» вже завершився розподіл подарунків.
+          </p>
+        </div>
+
+        <MyAssignmentCard roomId={roomId} telegramId={tgUser.id} />
+
         {onGoHome && (
-          <button type="button" className="btn btn-primary mt-4 mx-auto" onClick={onGoHome}>
-            <ArrowLeft size={18} />
+          <button type="button" className="btn btn-secondary mt-3 mx-auto" onClick={onGoHome}>
+            <ArrowLeft size={16} />
             <span>На головну</span>
           </button>
         )}
@@ -109,14 +122,26 @@ export const JoinRoom: React.FC<JoinRoomProps> = ({ roomId, onGoHome }) => {
       <div className="card success-card text-center">
         <CheckCircle2 size={52} className="text-forest mx-auto" />
         <h2>Чудово, {firstName}! 🎉</h2>
-        <p className="success-subtitle">Ваші дані успішно збережено для кімнати «{room.title}».</p>
+        <p className="success-subtitle">Ви успішно приєдналися до кімнати «{room.title}».</p>
+
+        <div className="tg-user-banner my-3 justify-center">
+          <div className="tg-user-avatar">
+            {firstName.charAt(0).toUpperCase()}
+          </div>
+          <div className="tg-user-info text-left">
+            <span className="tg-user-label">Зареєстрований Telegram:</span>
+            <span className="tg-user-name">
+              {firstName} {lastName} {tgUser.username ? `(@${tgUser.username})` : `(ID: ${tgUser.id})`}
+            </span>
+          </div>
+        </div>
+
         <div className="success-box">
           <p className="success-hint">
-            Щойно організатор (<strong>{room.hostName}</strong>) проведе жеребкування, ви отримаєте
-            персональний святковий лист на вашу пошту (<strong>{email}</strong>) з інформацією про
-            людину, якій ви даруватимете подарунок! 🎅✨
+            Щойно організатор (<strong>{room.hostName}</strong>) запустить жеребкування, бот надішле вам особисте повідомлення в Telegram з інформацією про вашого підопічного! 🎅✨
           </p>
         </div>
+
         {onGoHome && (
           <button type="button" className="btn btn-secondary mt-3 mx-auto" onClick={onGoHome}>
             <ArrowLeft size={16} />
@@ -133,8 +158,21 @@ export const JoinRoom: React.FC<JoinRoomProps> = ({ roomId, onGoHome }) => {
         <span className="badge-label">Запрошення до кімнати</span>
         <h2>{room.title}</h2>
         <p className="card-desc">
-          Організатор: <strong>{room.hostName}</strong>
+          Організатор: <strong>{room.hostName}</strong> (зареєстровано {room.participantCount} учасн.)
         </p>
+      </div>
+
+      {/* Telegram User Connected Badge */}
+      <div className="tg-user-banner">
+        <div className="tg-user-avatar">
+          {firstName.charAt(0).toUpperCase()}
+        </div>
+        <div className="tg-user-info">
+          <span className="tg-user-label">Ваш акаунт Telegram:</span>
+          <span className="tg-user-name">
+            {firstName} {lastName} {tgUser.username ? `(@${tgUser.username})` : `(ID: ${tgUser.id})`}
+          </span>
+        </div>
       </div>
 
       {errorMsg && (
@@ -165,7 +203,7 @@ export const JoinRoom: React.FC<JoinRoomProps> = ({ roomId, onGoHome }) => {
           <div className="form-group">
             <label htmlFor="join-last-name">
               <User size={16} />
-              <span>Ваше прізвище *</span>
+              <span>Ваше прізвище</span>
             </label>
             <input
               id="join-last-name"
@@ -174,25 +212,8 @@ export const JoinRoom: React.FC<JoinRoomProps> = ({ roomId, onGoHome }) => {
               placeholder="Коваленко"
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
-              required
             />
           </div>
-        </div>
-
-        <div className="form-group">
-          <label htmlFor="join-email">
-            <Mail size={16} />
-            <span>Ваш Email (для отримання результатів) *</span>
-          </label>
-          <input
-            id="join-email"
-            type="email"
-            className="input-text"
-            placeholder="ivan@example.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
         </div>
 
         <div className="form-group">
@@ -204,7 +225,7 @@ export const JoinRoom: React.FC<JoinRoomProps> = ({ roomId, onGoHome }) => {
             id="join-wishlist"
             className="input-textarea"
             rows={3}
-            placeholder="Що ви любите, розмір одягу, захоплення чи що краще НЕ дарувати..."
+            placeholder="Що ви любите, розмір одягу, хобі або що точно НЕ варто дарувати..."
             value={wishlist}
             onChange={(e) => setWishlist(e.target.value)}
           />

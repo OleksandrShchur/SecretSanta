@@ -6,7 +6,7 @@ public class Assignment
     public Guid RoomId { get; set; }
     public Guid GiverId { get; set; }
     public Guid ReceiverId { get; set; }
-    public bool EmailSent { get; set; }
+    public bool NotificationSent { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public Room? Room { get; set; }

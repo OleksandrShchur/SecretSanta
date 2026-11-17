@@ -14,7 +14,7 @@ builder.Services.AddDbContext<SecretSantaDbContext>(options =>
 // 2. Сервіси додатку
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<ISecretSantaAlgorithm, SecretSantaAlgorithm>();
-builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<ITelegramService, TelegramService>();
 
 // CORS для локальної розробки та Vite dev-сервера
 builder.Services.AddCors(options =>
@@ -39,6 +39,24 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<SecretSantaDbContext>();
     try
     {
+        db.Database.EnsureCreated();
+
+        // Перевіряємо, чи база містить застарілі колонки (HostEmail замість HostTelegramId)
+        var conn = db.Database.GetDbConnection();
+        conn.Open();
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = @"
+            IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'Rooms' AND COLUMN_NAME = 'HostEmail')
+            BEGIN
+                DROP TABLE IF EXISTS Assignments;
+                DROP TABLE IF EXISTS Restrictions;
+                DROP TABLE IF EXISTS Participants;
+                DROP TABLE IF EXISTS Rooms;
+            END
+        ";
+        cmd.ExecuteNonQuery();
+        conn.Close();
+
         db.Database.EnsureCreated();
     }
     catch (Exception ex)

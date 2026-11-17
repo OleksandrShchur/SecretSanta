@@ -5,7 +5,8 @@ public class Room
     public Guid Id { get; set; } = Guid.NewGuid();
     public string Title { get; set; } = string.Empty;
     public string HostName { get; set; } = string.Empty;
-    public string HostEmail { get; set; } = string.Empty;
+    public long HostTelegramId { get; set; }
+    public string? HostUsername { get; set; }
     public string AdminToken { get; set; } = Convert.ToHexString(System.Security.Cryptography.RandomNumberGenerator.GetBytes(16)).ToLowerInvariant();
     public string Status { get; set; } = "collecting"; // collecting | shuffled | closed
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

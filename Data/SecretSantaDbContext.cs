@@ -24,7 +24,8 @@ public class SecretSantaDbContext : DbContext
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Title).IsRequired().HasMaxLength(200);
             entity.Property(e => e.HostName).IsRequired().HasMaxLength(150);
-            entity.Property(e => e.HostEmail).IsRequired().HasMaxLength(250);
+            entity.Property(e => e.HostTelegramId).IsRequired();
+            entity.Property(e => e.HostUsername).HasMaxLength(100);
             entity.Property(e => e.AdminToken).IsRequired().HasMaxLength(100);
             entity.Property(e => e.Status).IsRequired().HasMaxLength(50);
             entity.HasIndex(e => e.AdminToken);
@@ -35,8 +36,9 @@ public class SecretSantaDbContext : DbContext
         {
             entity.HasKey(e => e.Id);
             entity.Property(e => e.FirstName).IsRequired().HasMaxLength(100);
-            entity.Property(e => e.LastName).IsRequired().HasMaxLength(100);
-            entity.Property(e => e.Email).IsRequired().HasMaxLength(250);
+            entity.Property(e => e.LastName).HasMaxLength(100);
+            entity.Property(e => e.TelegramId).IsRequired();
+            entity.Property(e => e.TelegramUsername).HasMaxLength(100);
             entity.Property(e => e.Wishlist).HasMaxLength(2000);
 
             entity.HasOne(e => e.Room)
@@ -44,7 +46,7 @@ public class SecretSantaDbContext : DbContext
                 .HasForeignKey(e => e.RoomId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            entity.HasIndex(e => new { e.RoomId, e.Email }).IsUnique();
+            entity.HasIndex(e => new { e.RoomId, e.TelegramId }).IsUnique();
         });
 
         // Restriction
@@ -74,6 +76,7 @@ public class SecretSantaDbContext : DbContext
         modelBuilder.Entity<Assignment>(entity =>
         {
             entity.HasKey(e => e.Id);
+            entity.Property(e => e.NotificationSent).IsRequired();
 
             entity.HasOne(e => e.Room)
                 .WithMany(r => r.Assignments)

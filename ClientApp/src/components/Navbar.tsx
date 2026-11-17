@@ -1,5 +1,6 @@
 import React from 'react';
-import { Dices, Sparkles } from 'lucide-react';
+import { Dices, Send } from 'lucide-react';
+import { triggerHaptic } from '../telegram';
 
 interface NavbarProps {
   activeTab: 'offline' | 'online';
@@ -12,28 +13,34 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, onTabChange }) => {
       <button
         type="button"
         role="tab"
-        aria-selected={activeTab === 'offline'}
-        className={`nav-tab ${activeTab === 'offline' ? 'active' : ''}`}
-        onClick={() => onTabChange('offline')}
+        aria-selected={activeTab === 'online'}
+        className={`nav-tab ${activeTab === 'online' ? 'active' : ''}`}
+        onClick={() => {
+          triggerHaptic('light');
+          onTabChange('online');
+        }}
       >
-        <Dices size={18} className="tab-icon" />
+        <Send size={18} className="tab-icon" />
         <span className="nav-tab-label">
-          <span className="tab-title">Швидке (Офлайн)</span>
-          <span className="tab-desc">Миттєво на місці</span>
+          <span className="tab-title">Кімната в Telegram</span>
+          <span className="tab-desc">Сповіщення від бота</span>
         </span>
       </button>
 
       <button
         type="button"
         role="tab"
-        aria-selected={activeTab === 'online'}
-        className={`nav-tab ${activeTab === 'online' ? 'active' : ''}`}
-        onClick={() => onTabChange('online')}
+        aria-selected={activeTab === 'offline'}
+        className={`nav-tab ${activeTab === 'offline' ? 'active' : ''}`}
+        onClick={() => {
+          triggerHaptic('light');
+          onTabChange('offline');
+        }}
       >
-        <Sparkles size={18} className="tab-icon" />
+        <Dices size={18} className="tab-icon" />
         <span className="nav-tab-label">
-          <span className="tab-title">Онлайн-кімната</span>
-          <span className="tab-desc">З розсилкою на email</span>
+          <span className="tab-title">Швидке (Офлайн)</span>
+          <span className="tab-desc">Локально на екрані</span>
         </span>
       </button>
     </nav>

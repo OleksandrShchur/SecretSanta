@@ -3,26 +3,27 @@ import {
   Users,
   Copy,
   Check,
-  Send,
   Trash2,
   Sliders,
   Sparkles,
   RefreshCw,
   Gift,
   AlertCircle,
-  Mail,
   CheckCircle2,
   Share2,
   Key,
+  MessageCircle,
 } from 'lucide-react';
-import type { RoomAdmin } from '../types';
+import type { RoomAdmin, TelegramConfig } from '../types';
 import {
   getRoomAdmin,
   removeParticipant,
   saveRestrictions,
-  sendInvites,
   performShuffle,
+  getTelegramConfig,
 } from '../api';
+import { getTelegramUser, openTelegramShare, triggerHaptic } from '../telegram';
+import { MyAssignmentCard } from './MyAssignmentCard';
 
 interface HostDashboardProps {
   roomId: string;
@@ -31,19 +32,17 @@ interface HostDashboardProps {
 }
 
 export const HostDashboard: React.FC<HostDashboardProps> = ({ roomId, adminToken }) => {
+  const tgUser = getTelegramUser();
+
   const [room, setRoom] = useState<RoomAdmin | null>(null);
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [tgConfig, setTgConfig] = useState<TelegramConfig>({ botUsername: '', configured: false });
 
   // Link copy
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedAdminLink, setCopiedAdminLink] = useState(false);
-
-  // Email invites
-  const [inviteEmails, setInviteEmails] = useState('');
-  const [sendingInvites, setSendingInvites] = useState(false);
-  const [inviteSuccessMsg, setInviteSuccessMsg] = useState<string | null>(null);
 
   // Restrictions
   const [showRestrictions, setShowRestrictions] = useState(false);
@@ -51,6 +50,10 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({ roomId, adminToken
   // Shuffle
   const [shuffling, setShuffling] = useState(false);
   const [shuffleSuccessMsg, setShuffleSuccessMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    getTelegramConfig().then(setTgConfig);
+  }, []);
 
   const fetchRoomData = useCallback(
     async (isManual = false) => {
@@ -73,7 +76,7 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({ roomId, adminToken
     fetchRoomData();
   }, [fetchRoomData]);
 
-  // Smart polling for MonsterASP (every 4 seconds while collecting)
+  // Polling every 4 seconds while collecting
   useEffect(() => {
     if (!room || room.status !== 'collecting') return;
 
@@ -84,10 +87,15 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({ roomId, adminToken
     return () => clearInterval(interval);
   }, [room?.status, fetchRoomData]);
 
-  const inviteUrl = `${window.location.origin}?tab=online&room=${roomId}`;
+  // Generate Telegram Mini App invite link
+  const inviteUrl = tgConfig.botUsername
+    ? `https://t.me/${tgConfig.botUsername}/app?startapp=${roomId}`
+    : `${window.location.origin}?tab=online&room=${roomId}`;
+
   const adminUrl = window.location.href;
 
   const handleCopyLink = async () => {
+    triggerHaptic('light');
     try {
       await navigator.clipboard.writeText(inviteUrl);
       setCopiedLink(true);
@@ -97,23 +105,14 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({ roomId, adminToken
     }
   };
 
-  const handleShareLink = async () => {
-    if (typeof navigator !== 'undefined' && navigator.share) {
-      try {
-        await navigator.share({
-          title: `Таємний Санта: ${room?.title || 'Приєднуйтесь!'}`,
-          text: `Приєднуйтесь до жеребкування «Таємний Санта» у кімнаті «${room?.title}»! 🎅🎁`,
-          url: inviteUrl,
-        });
-        return;
-      } catch (err: any) {
-        if (err.name === 'AbortError') return;
-      }
-    }
-    handleCopyLink();
+  const handleShareTelegram = () => {
+    triggerHaptic('light');
+    const shareText = `Приєднуйтесь до гри «Таємний Санта» у кімнаті «${room?.title || ''}»! 🎅🎁 Відкривайте додаток та пишіть свої побажання:`;
+    openTelegramShare(inviteUrl, shareText);
   };
 
   const handleCopyAdminLink = async () => {
+    triggerHaptic('light');
     try {
       await navigator.clipboard.writeText(adminUrl);
       setCopiedAdminLink(true);
@@ -123,34 +122,10 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({ roomId, adminToken
     }
   };
 
-  const handleSendInvites = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setInviteSuccessMsg(null);
-    const emails = inviteEmails
-      .split(/[\n,;]+/)
-      .map((s) => s.trim())
-      .filter(Boolean);
-
-    if (emails.length === 0) {
-      alert('Введіть щонайменше одну адресу email.');
-      return;
-    }
-
-    setSendingInvites(true);
-    try {
-      const res = await sendInvites(roomId, adminToken, emails, inviteUrl);
-      setInviteSuccessMsg(`Успішно надіслано ${res.sentCount} запрошень!`);
-      setInviteEmails('');
-    } catch (err: any) {
-      alert('Помилка відправки запрошень: ' + err.message);
-    } finally {
-      setSendingInvites(false);
-    }
-  };
-
   const handleRemove = async (participantId: string, name: string) => {
     if (!confirm(`Видалити учасника ${name}?`)) return;
 
+    triggerHaptic('warning');
     try {
       await removeParticipant(roomId, participantId, adminToken);
       await fetchRoomData(true);
@@ -162,6 +137,7 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({ roomId, adminToken
   const handleToggleRestriction = async (giverId: string, receiverId: string) => {
     if (!room) return;
 
+    triggerHaptic('light');
     const current = room.restrictions || [];
     const exists = current.some((r) => r.giverId === giverId && r.receiverId === receiverId);
 
@@ -189,24 +165,27 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({ roomId, adminToken
 
     const confirmed = confirm(
       'Ви впевнені, що хочете провести жеребкування?\n\n' +
-        'Після цього кімната закриється для нових учасників, а кожному учаснику буде надіслано лист із його підопічним.'
+        'Після цього кімната закриється для нових заявок, а бот надішле кожному учаснику особисте сповіщення з його підопічним у Telegram.'
     );
     if (!confirmed) return;
 
     setShuffling(true);
+    triggerHaptic('light');
     try {
       const res = await performShuffle(roomId, adminToken);
-      if (res.emailsSent < res.totalParticipants) {
+      if (res.notificationsSent < res.totalParticipants) {
         setShuffleSuccessMsg(
-          `⚠️ Жеребкування проведено! Надіслано ${res.emailsSent} з ${res.totalParticipants} листів. ${res.errorMessage || ''}`
+          `⚠️ Жеребкування проведено! Надіслано ${res.notificationsSent} з ${res.totalParticipants} Telegram-повідомлень. ${res.errorMessage || ''}`
         );
       } else {
         setShuffleSuccessMsg(
-          `🎉 Жеребкування успішно проведено! Розіслано всі ${res.emailsSent} листів із ${res.totalParticipants} учасників.`
+          `🎉 Жеребкування успішно проведено! Розіслано всі ${res.notificationsSent} сповіщень у Telegram.`
         );
       }
+      triggerHaptic('success');
       await fetchRoomData(true);
     } catch (err: any) {
+      triggerHaptic('error');
       alert('Помилка жеребкування:\n' + err.message);
     } finally {
       setShuffling(false);
@@ -232,7 +211,7 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({ roomId, adminToken
   }
 
   const isShuffled = room.status === 'shuffled';
-  const hasShareApi = typeof navigator !== 'undefined' && !!navigator.share;
+  const hostIsParticipant = room.participants.some((p) => p.telegramId === tgUser.id);
 
   return (
     <div className="dashboard-container">
@@ -267,7 +246,7 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({ roomId, adminToken
         <div className="admin-link-tip">
           <div className="admin-tip-text">
             <Key size={16} className="text-gold flex-shrink-0" />
-            <span>Це ваше секретне посилання для керування кімнатою. Збережіть його:</span>
+            <span>Посилання для керування кімнатою (збережіть собі):</span>
           </div>
           <button
             type="button"
@@ -275,7 +254,7 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({ roomId, adminToken
             onClick={handleCopyAdminLink}
           >
             {copiedAdminLink ? <Check size={14} /> : <Copy size={14} />}
-            <span>{copiedAdminLink ? 'Скопійовано!' : 'Скопіювати адмін-лінк'}</span>
+            <span>{copiedAdminLink ? 'Скопійовано!' : 'Скопіювати'}</span>
           </button>
         </div>
 
@@ -287,65 +266,49 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({ roomId, adminToken
         )}
       </div>
 
-      {/* Invite Card */}
+      {/* Host's Own Assignment Card (if shuffled and host participates) */}
+      {isShuffled && hostIsParticipant && (
+        <div className="mb-4">
+          <MyAssignmentCard roomId={roomId} telegramId={tgUser.id} />
+        </div>
+      )}
+
+      {/* Invite Card via Telegram */}
       {!isShuffled && (
         <div className="card invite-card">
           <div className="card-header">
-            <Mail size={20} className="text-forest flex-shrink-0" />
+            <MessageCircle size={22} className="text-forest flex-shrink-0" />
             <div>
-              <h3>Запросити учасників</h3>
-              <p className="card-desc">Поділіться цим посиланням у месенджері або надішліть email</p>
+              <h3>Запросити учасників у Telegram</h3>
+              <p className="card-desc">Поділіться посиланням у групах чи особистих повідомленнях Telegram</p>
             </div>
           </div>
 
           <div className="invite-block">
-            <label className="field-label">Посилання для учасників:</label>
+            <label className="field-label">Telegram-посилання для запрошення:</label>
             <div className="copy-row">
               <input type="text" readOnly value={inviteUrl} className="input-text" />
               <div className="invite-actions-wrap">
-                {hasShareApi && (
-                  <button
-                    type="button"
-                    className="btn btn-secondary btn-share"
-                    onClick={handleShareLink}
-                    title="Поділитися через месенджер"
-                  >
-                    <Share2 size={16} />
-                    <span>Поділитись</span>
-                  </button>
-                )}
                 <button
                   type="button"
-                  className={`btn ${copiedLink ? 'btn-success' : 'btn-primary'}`}
+                  className="btn btn-primary btn-share"
+                  onClick={handleShareTelegram}
+                  title="Поділитися в Telegram"
+                >
+                  <Share2 size={16} />
+                  <span>Поділитись у Telegram</span>
+                </button>
+                <button
+                  type="button"
+                  className={`btn ${copiedLink ? 'btn-success' : 'btn-secondary'}`}
                   onClick={handleCopyLink}
                 >
                   {copiedLink ? <Check size={16} /> : <Copy size={16} />}
-                  <span>{copiedLink ? 'Скопійовано!' : 'Скопіювати'}</span>
+                  <span>{copiedLink ? 'Скопійовано!' : 'Копіювати'}</span>
                 </button>
               </div>
             </div>
           </div>
-
-          <form onSubmit={handleSendInvites} className="email-invites-form">
-            <label className="field-label">Або розіслати запрошення на email (через кому):</label>
-            <textarea
-              className="input-textarea"
-              rows={2}
-              placeholder="friend1@example.com, colleague@work.com"
-              value={inviteEmails}
-              onChange={(e) => setInviteEmails(e.target.value)}
-            />
-            <button
-              type="submit"
-              className="btn btn-secondary-sm"
-              disabled={sendingInvites || !inviteEmails.trim()}
-            >
-              <Send size={16} />
-              <span>{sendingInvites ? 'Надсилаємо...' : 'Надіслати запрошення ✉️'}</span>
-            </button>
-
-            {inviteSuccessMsg && <p className="success-note">{inviteSuccessMsg}</p>}
-          </form>
         </div>
       )}
 
@@ -363,7 +326,7 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({ roomId, adminToken
 
         {room.participants.length === 0 ? (
           <p className="empty-state">
-            Поки що немає зареєстрованих учасників. Надішліть посилання друзям!
+            Поки що немає зареєстрованих учасників. Надішліть посилання друзям у Telegram!
           </p>
         ) : (
           <div className="participants-grid">
@@ -376,7 +339,9 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({ roomId, adminToken
                       <strong className="participant-name">
                         {p.firstName} {p.lastName}
                       </strong>
-                      <span className="participant-email">{p.email}</span>
+                      <span className="participant-tg-handle">
+                        {p.telegramUsername ? `@${p.telegramUsername.replace(/^@/, '')}` : `ID: ${p.telegramId}`}
+                      </span>
                     </div>
                   </div>
 
@@ -482,8 +447,7 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({ roomId, adminToken
             <CheckCircle2 size={36} className="text-forest" />
             <h3>Жеребкування успішно завершено! 🎄</h3>
             <p>
-              Усі учасники отримали персональні святкові листи з іменами своїх підопічних на свій
-              email. Кімната закрита для змін.
+              Усі учасники отримали персональні святкові повідомлення від бота в Telegram. Кімната закрита для змін.
             </p>
           </div>
         ) : (
@@ -497,14 +461,14 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({ roomId, adminToken
               <Sparkles size={22} />
               <span>
                 {shuffling
-                  ? 'Жеребкуємо та надсилаємо листи...'
-                  : '🎅 Провести жеребкування та розіслати листи'}
+                  ? 'Жеребкуємо та надсилаємо сповіщення...'
+                  : '🎅 Провести жеребкування та розіслати в Telegram'}
               </span>
             </button>
             <p className="cta-hint">
               {room.participants.length >= 3
-                ? 'Кожен учасник отримає святковий лист із іменем свого підопічного.'
-                : `Для жеребкування потрібно мінімум 3 учасники (зараз: ${room.participants.length}).`}
+                ? 'Кожен учасник отримає святкове повідомлення від бота з іменем свого підопічного.'
+                : `Для жеребкування потрібно щонайменше 3 учасники (зараз: ${room.participants.length}).`}
             </p>
           </div>
         )}

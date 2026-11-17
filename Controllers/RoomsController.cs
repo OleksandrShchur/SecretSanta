@@ -13,30 +13,30 @@ public class RoomsController : ControllerBase
 {
     private readonly SecretSantaDbContext _db;
     private readonly ISecretSantaAlgorithm _algorithm;
-    private readonly IEmailService _emailService;
-    private readonly ILogger<RoomsController> _logger;
+    private readonly ITelegramService _telegramService;
+    private readonly IConfiguration _configuration;
 
     public RoomsController(
         SecretSantaDbContext db,
         ISecretSantaAlgorithm algorithm,
-        IEmailService emailService,
-        ILogger<RoomsController> logger)
+        ITelegramService telegramService,
+        IConfiguration configuration)
     {
         _db = db;
         _algorithm = algorithm;
-        _emailService = emailService;
-        _logger = logger;
+        _telegramService = telegramService;
+        _configuration = configuration;
     }
 
-    // 1. Створення кімнати
+    // 1. Створення нової кімнати хостом
     [HttpPost]
-    public async Task<ActionResult<RoomAdminDto>> CreateRoom([FromBody] CreateRoomRequest request)
+    public async Task<ActionResult<RoomAdminDto>> Create([FromBody] CreateRoomRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.Title) ||
             string.IsNullOrWhiteSpace(request.HostFirstName) ||
-            string.IsNullOrWhiteSpace(request.HostEmail))
+            request.HostTelegramId == 0)
         {
-            return BadRequest("Назва кімнати, ім'я та email організатора є обов'язковими.");
+            return BadRequest("Назва кімнати, ім'я хоста та Telegram ID є обов'язковими.");
         }
 
         string hostFullName = $"{request.HostFirstName.Trim()} {request.HostLastName?.Trim()}".Trim();
@@ -45,7 +45,8 @@ public class RoomsController : ControllerBase
         {
             Title = request.Title.Trim(),
             HostName = hostFullName,
-            HostEmail = request.HostEmail.Trim().ToLowerInvariant(),
+            HostTelegramId = request.HostTelegramId,
+            HostUsername = request.HostUsername?.TrimStart('@'),
             Status = "collecting"
         };
 
@@ -58,7 +59,8 @@ public class RoomsController : ControllerBase
                 RoomId = room.Id,
                 FirstName = request.HostFirstName.Trim(),
                 LastName = request.HostLastName?.Trim() ?? string.Empty,
-                Email = request.HostEmail.Trim().ToLowerInvariant(),
+                TelegramId = request.HostTelegramId,
+                TelegramUsername = request.HostUsername?.TrimStart('@'),
                 Wishlist = request.HostWishlist?.Trim()
             };
             _db.Participants.Add(hostParticipant);
@@ -68,28 +70,35 @@ public class RoomsController : ControllerBase
 
         var participants = await _db.Participants
             .Where(p => p.RoomId == room.Id)
-            .OrderBy(p => p.CreatedAt)
-            .Select(p => new ParticipantDto(p.Id, p.RoomId, p.FirstName, p.LastName, p.Email, p.Wishlist, p.CreatedAt))
+            .Select(p => new ParticipantDto(p.Id, p.RoomId, p.FirstName, p.LastName, p.TelegramId, p.TelegramUsername, p.Wishlist, p.CreatedAt))
             .ToListAsync();
 
-        return Ok(new RoomAdminDto(
-            room.Id,
-            room.Title,
-            room.HostName,
-            room.HostEmail,
-            room.AdminToken,
-            room.Status,
-            room.CreatedAt,
-            participants,
-            []
-        ));
+        return CreatedAtAction(
+            nameof(GetAdmin),
+            new { id = room.Id, adminToken = room.AdminToken },
+            new RoomAdminDto(
+                room.Id,
+                room.Title,
+                room.HostName,
+                room.HostTelegramId,
+                room.HostUsername,
+                room.AdminToken,
+                room.Status,
+                room.CreatedAt,
+                participants,
+                new List<RestrictionDto>()
+            )
+        );
     }
 
-    // 2. Отримання публічної інформації про кімнату (для сторінки приєднання)
+    // 2. Публічна інформація про кімнату (для сторінки приєднання)
     [HttpGet("{id:guid}")]
-    public async Task<ActionResult<RoomPublicDto>> GetRoom(Guid id)
+    public async Task<ActionResult<RoomPublicDto>> GetPublic(Guid id)
     {
-        var room = await _db.Rooms.FindAsync(id);
+        var room = await _db.Rooms
+            .Include(r => r.Participants)
+            .FirstOrDefaultAsync(r => r.Id == id);
+
         if (room == null)
         {
             return NotFound("Кімнату не знайдено.");
@@ -100,41 +109,39 @@ public class RoomsController : ControllerBase
             room.Title,
             room.HostName,
             room.Status,
+            room.Participants.Count,
             room.CreatedAt
         ));
     }
 
-    // 3. Отримання панелі хоста (з перевіркою адмін-токена)
+    // 3. Інформація для організатора (доступ за adminToken)
     [HttpGet("{id:guid}/admin")]
-    public async Task<ActionResult<RoomAdminDto>> GetRoomAdmin(Guid id, [FromQuery] string adminToken)
+    public async Task<ActionResult<RoomAdminDto>> GetAdmin(Guid id, [FromQuery] string adminToken)
     {
-        var room = await _db.Rooms.FindAsync(id);
-        if (room == null)
+        var room = await _db.Rooms
+            .Include(r => r.Participants)
+            .Include(r => r.Restrictions)
+            .FirstOrDefaultAsync(r => r.Id == id);
+
+        if (room == null || room.AdminToken != adminToken)
         {
-            return NotFound("Кімнату не знайдено.");
+            return Unauthorized("Недійсний токен організатора або кімнату не знайдено.");
         }
 
-        if (room.AdminToken != adminToken)
-        {
-            return Unauthorized("Недійсний токен організатора.");
-        }
+        var participants = room.Participants
+            .Select(p => new ParticipantDto(p.Id, p.RoomId, p.FirstName, p.LastName, p.TelegramId, p.TelegramUsername, p.Wishlist, p.CreatedAt))
+            .ToList();
 
-        var participants = await _db.Participants
-            .Where(p => p.RoomId == id)
-            .OrderBy(p => p.CreatedAt)
-            .Select(p => new ParticipantDto(p.Id, p.RoomId, p.FirstName, p.LastName, p.Email, p.Wishlist, p.CreatedAt))
-            .ToListAsync();
-
-        var restrictions = await _db.Restrictions
-            .Where(r => r.RoomId == id)
+        var restrictions = room.Restrictions
             .Select(r => new RestrictionDto(r.Id, r.GiverId, r.ReceiverId))
-            .ToListAsync();
+            .ToList();
 
         return Ok(new RoomAdminDto(
             room.Id,
             room.Title,
             room.HostName,
-            room.HostEmail,
+            room.HostTelegramId,
+            room.HostUsername,
             room.AdminToken,
             room.Status,
             room.CreatedAt,
@@ -143,20 +150,7 @@ public class RoomsController : ControllerBase
         ));
     }
 
-    // 4. Отримання списку учасників кімнати
-    [HttpGet("{id:guid}/participants")]
-    public async Task<ActionResult<List<ParticipantDto>>> GetParticipants(Guid id)
-    {
-        var participants = await _db.Participants
-            .Where(p => p.RoomId == id)
-            .OrderBy(p => p.CreatedAt)
-            .Select(p => new ParticipantDto(p.Id, p.RoomId, p.FirstName, p.LastName, p.Email, p.Wishlist, p.CreatedAt))
-            .ToListAsync();
-
-        return Ok(participants);
-    }
-
-    // 5. Реєстрація учасника
+    // 4. Додавання / оновлення учасника кімнати
     [HttpPost("{id:guid}/participants")]
     public async Task<ActionResult<ParticipantDto>> AddParticipant(Guid id, [FromBody] CreateParticipantRequest request)
     {
@@ -168,19 +162,38 @@ public class RoomsController : ControllerBase
 
         if (room.Status != "collecting")
         {
-            return BadRequest("Реєстрацію в цю кімнату вже завершено.");
+            return BadRequest("Прийом заявок у цю кімнату вже закрито (жеребкування проведено).");
         }
 
-        if (string.IsNullOrWhiteSpace(request.FirstName) || string.IsNullOrWhiteSpace(request.Email))
+        if (string.IsNullOrWhiteSpace(request.FirstName) || request.TelegramId == 0)
         {
-            return BadRequest("Ім'я та email є обов'язковими.");
+            return BadRequest("Ім'я та Telegram ID є обов'язковими.");
         }
 
-        string emailClean = request.Email.Trim().ToLowerInvariant();
-        bool exists = await _db.Participants.AnyAsync(p => p.RoomId == id && p.Email == emailClean);
-        if (exists)
+        var existing = await _db.Participants
+            .FirstOrDefaultAsync(p => p.RoomId == id && p.TelegramId == request.TelegramId);
+
+        if (existing != null)
         {
-            return Conflict("Учасник з таким email вже зареєстрований у цій кімнаті!");
+            existing.FirstName = request.FirstName.Trim();
+            existing.LastName = request.LastName?.Trim() ?? string.Empty;
+            existing.TelegramUsername = request.TelegramUsername?.TrimStart('@');
+            if (!string.IsNullOrWhiteSpace(request.Wishlist))
+            {
+                existing.Wishlist = request.Wishlist.Trim();
+            }
+            await _db.SaveChangesAsync();
+
+            return Ok(new ParticipantDto(
+                existing.Id,
+                existing.RoomId,
+                existing.FirstName,
+                existing.LastName,
+                existing.TelegramId,
+                existing.TelegramUsername,
+                existing.Wishlist,
+                existing.CreatedAt
+            ));
         }
 
         var participant = new Participant
@@ -188,7 +201,8 @@ public class RoomsController : ControllerBase
             RoomId = id,
             FirstName = request.FirstName.Trim(),
             LastName = request.LastName?.Trim() ?? string.Empty,
-            Email = emailClean,
+            TelegramId = request.TelegramId,
+            TelegramUsername = request.TelegramUsername?.TrimStart('@'),
             Wishlist = request.Wishlist?.Trim()
         };
 
@@ -200,13 +214,55 @@ public class RoomsController : ControllerBase
             participant.RoomId,
             participant.FirstName,
             participant.LastName,
-            participant.Email,
+            participant.TelegramId,
+            participant.TelegramUsername,
             participant.Wishlist,
             participant.CreatedAt
         ));
     }
 
-    // 6. Видалення учасника хостом
+    // 5. Перегляд власного підопічного у Mini App
+    [HttpGet("{id:guid}/my-assignment")]
+    public async Task<ActionResult<MyAssignmentDto>> GetMyAssignment(Guid id, [FromQuery] long telegramId)
+    {
+        var room = await _db.Rooms.FindAsync(id);
+        if (room == null)
+        {
+            return NotFound("Кімнату не знайдено.");
+        }
+
+        if (room.Status != "shuffled")
+        {
+            return BadRequest("Жеребкування для цієї кімнати ще не проведено.");
+        }
+
+        var giver = await _db.Participants
+            .FirstOrDefaultAsync(p => p.RoomId == id && p.TelegramId == telegramId);
+
+        if (giver == null)
+        {
+            return NotFound("Вас не знайдено серед учасників цієї кімнати.");
+        }
+
+        var assignment = await _db.Assignments
+            .Include(a => a.Receiver)
+            .FirstOrDefaultAsync(a => a.RoomId == id && a.GiverId == giver.Id);
+
+        if (assignment == null || assignment.Receiver == null)
+        {
+            return NotFound("Призначення для вас не знайдено.");
+        }
+
+        return Ok(new MyAssignmentDto(
+            room.Title,
+            assignment.Receiver.FirstName,
+            assignment.Receiver.LastName,
+            assignment.Receiver.TelegramUsername,
+            assignment.Receiver.Wishlist
+        ));
+    }
+
+    // 6. Видалення учасника організатором
     [HttpDelete("{id:guid}/participants/{participantId:guid}")]
     public async Task<IActionResult> RemoveParticipant(Guid id, Guid participantId, [FromQuery] string adminToken)
     {
@@ -216,7 +272,7 @@ public class RoomsController : ControllerBase
             return Unauthorized("Недійсний токен організатора.");
         }
 
-        if (room.Status == "shuffled")
+        if (room.Status != "collecting")
         {
             return BadRequest("Неможливо видалити учасника після проведення жеребкування.");
         }
@@ -227,19 +283,13 @@ public class RoomsController : ControllerBase
             return NotFound("Учасника не знайдено.");
         }
 
-        // Видаляємо пов'язані обмеження
-        var restrictions = await _db.Restrictions
-            .Where(r => r.RoomId == id && (r.GiverId == participantId || r.ReceiverId == participantId))
-            .ToListAsync();
-        _db.Restrictions.RemoveRange(restrictions);
-
         _db.Participants.Remove(participant);
         await _db.SaveChangesAsync();
 
         return NoContent();
     }
 
-    // 7. Збереження обмежень хостом
+    // 7. Збереження обмежень
     [HttpPost("{id:guid}/restrictions")]
     public async Task<IActionResult> SaveRestrictions(Guid id, [FromQuery] string adminToken, [FromBody] SaveRestrictionsRequest request)
     {
@@ -249,54 +299,28 @@ public class RoomsController : ControllerBase
             return Unauthorized("Недійсний токен організатора.");
         }
 
-        if (room.Status == "shuffled")
+        if (room.Status != "collecting")
         {
             return BadRequest("Неможливо змінити обмеження після проведення жеребкування.");
         }
 
-        // Очищаємо старі обмеження кімнати
         var old = await _db.Restrictions.Where(r => r.RoomId == id).ToListAsync();
         _db.Restrictions.RemoveRange(old);
 
-        if (request.Restrictions.Count > 0)
+        var newRestrictions = request.Restrictions.Select(r => new Restriction
         {
-            var newRestrictions = request.Restrictions.Select(r => new Restriction
-            {
-                RoomId = id,
-                GiverId = r.GiverId,
-                ReceiverId = r.ReceiverId
-            });
-            await _db.Restrictions.AddRangeAsync(newRestrictions);
-        }
+            RoomId = id,
+            GiverId = r.GiverId,
+            ReceiverId = r.ReceiverId
+        }).ToList();
 
+        await _db.Restrictions.AddRangeAsync(newRestrictions);
         await _db.SaveChangesAsync();
-        return Ok(new { success = true });
+
+        return Ok(new { success = true, count = newRestrictions.Count });
     }
 
-    // 8. Відправка запрошень на Email
-    [HttpPost("{id:guid}/invites")]
-    public async Task<IActionResult> SendInvites(Guid id, [FromQuery] string adminToken, [FromBody] SendInvitesRequest request)
-    {
-        var room = await _db.Rooms.FindAsync(id);
-        if (room == null || room.AdminToken != adminToken)
-        {
-            return Unauthorized("Недійсний токен організатора.");
-        }
-
-        int sent = 0;
-        foreach (var email in request.Emails)
-        {
-            string clean = email.Trim();
-            if (string.IsNullOrWhiteSpace(clean)) continue;
-
-            bool ok = await _emailService.SendInviteEmailAsync(room.Title, room.HostName, clean, request.InviteUrl);
-            if (ok) sent++;
-        }
-
-        return Ok(new { success = true, sentCount = sent });
-    }
-
-    // 9. Проведення жеребкування та розсилка листів
+    // 8. Проведення жеребкування та розсилка Telegram-сповіщень
     [HttpPost("{id:guid}/shuffle")]
     public async Task<ActionResult<ShuffleResponse>> Shuffle(Guid id, [FromQuery] string adminToken)
     {
@@ -325,7 +349,6 @@ public class RoomsController : ControllerBase
             return BadRequest(result.ErrorMessage);
         }
 
-        // Зберігаємо пари в БД
         var oldAssignments = await _db.Assignments.Where(a => a.RoomId == id).ToListAsync();
         _db.Assignments.RemoveRange(oldAssignments);
 
@@ -334,36 +357,36 @@ public class RoomsController : ControllerBase
             RoomId = id,
             GiverId = pair.Giver.Id,
             ReceiverId = pair.Receiver.Id,
-            EmailSent = false
+            NotificationSent = false
         }).ToList();
 
         await _db.Assignments.AddRangeAsync(assignments);
         room.Status = "shuffled";
         await _db.SaveChangesAsync();
 
-        // Розсилаємо персональні листи через IEmailService
-        int emailsSent = 0;
+        string? webAppUrl = _configuration["Telegram:WebAppUrl"];
+
+        int notificationsSent = 0;
         foreach (var (giver, receiver) in result.Pairs)
         {
-            bool ok = await _emailService.SendAssignmentEmailAsync(room.Title, giver, receiver);
+            bool ok = await _telegramService.SendAssignmentNotificationAsync(room.Title, giver, receiver, webAppUrl);
             if (ok)
             {
-                emailsSent++;
+                notificationsSent++;
                 var assign = assignments.First(a => a.GiverId == giver.Id);
-                assign.EmailSent = true;
+                assign.NotificationSent = true;
             }
-            // Затримка 600мс для дотримання ліміту Resend Free Tier (максимум 2 запити на секунду)
-            await Task.Delay(600);
+            await Task.Delay(100);
         }
 
         await _db.SaveChangesAsync();
 
         string? note = null;
-        if (emailsSent < participants.Count)
+        if (notificationsSent < participants.Count)
         {
-            note = $"Надіслано {emailsSent} з {participants.Count} листів. На безкоштовному тарифі Resend (без власного домену) надсилання дозволено лише на ваш зареєстрований email ({room.HostEmail}). Для розсилки іншим учасникам підтвердіть власний домен на resend.com/domains.";
+            note = $"Надіслано {notificationsSent} з {participants.Count} сповіщень. Переконайтеся, що всі учасники хоча б раз запустили бота.";
         }
 
-        return Ok(new ShuffleResponse(true, participants.Count, emailsSent, note));
+        return Ok(new ShuffleResponse(true, participants.Count, notificationsSent, note));
     }
 }

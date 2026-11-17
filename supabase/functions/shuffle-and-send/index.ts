@@ -151,7 +151,8 @@ serve(async (req) => {
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const resendApiKey = Deno.env.get("RESEND_API_KEY");
+    const telegramBotToken = Deno.env.get("TELEGRAM_BOT_TOKEN");
+    const webAppUrl = Deno.env.get("WEBAPP_URL");
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
@@ -236,7 +237,7 @@ serve(async (req) => {
       room_id: roomId,
       giver_id: pair.giver.id,
       receiver_id: pair.receiver.id,
-      email_sent: false,
+      notification_sent: false,
     }));
 
     await supabase.from("assignments").delete().eq("room_id", roomId);
@@ -245,44 +246,61 @@ serve(async (req) => {
       console.error("Assign insert error:", assignError);
     }
 
-    // 8. Відправляємо листи через Resend
-    let emailsSent = 0;
+    // 8. Відправляємо сповіщення через Telegram Bot API
+    let notificationsSent = 0;
     const errors: string[] = [];
 
-    if (resendApiKey) {
+    if (telegramBotToken) {
       for (const pair of pairs) {
         try {
-          const res = await fetch("https://api.resend.com/emails", {
+          const receiverName = `${pair.receiver.first_name} ${pair.receiver.last_name || ""}`.trim();
+          const receiverUsername = pair.receiver.telegram_username ? `(@${pair.receiver.telegram_username.replace(/^@/, "")})` : "";
+          const wishlist = pair.receiver.wishlist ? `\n🎁 <b>Побажання:</b>\n<i>${pair.receiver.wishlist}</i>\n` : "";
+
+          const text = `🎅 <b>Твій Таємний Санта: «${room.title}»</b>\n\nПривіт, ${pair.giver.first_name}! 🎄\nЖеребкування успішно відбулося.\n\n🎁 <b>Тобі випало дарувати подарунок для:</b>\n<b>${receiverName}</b> ${receiverUsername}\n${wishlist}\n🤫 <i>Пам'ятай: це секрет! Не видавай себе завчасно.</i>`;
+
+          const payload: any = {
+            chat_id: pair.giver.telegram_id,
+            text,
+            parse_mode: "HTML",
+          };
+
+          if (webAppUrl && webAppUrl.startsWith("https://")) {
+            payload.reply_markup = {
+              inline_keyboard: [
+                [
+                  {
+                    text: "🎁 Відкрити кімнату в додатку",
+                    web_app: { url: webAppUrl },
+                  },
+                ],
+              ],
+            };
+          }
+
+          const res = await fetch(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
             method: "POST",
-            headers: {
-              "Authorization": `Bearer ${resendApiKey}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              from: "Таємний Санта <santa@resend.dev>",
-              to: [pair.giver.email],
-              subject: `🎅 Твій Таємний Санта: «${room.title}»`,
-              html: buildEmailHtml(room.title, pair.giver.first_name, pair.receiver),
-            }),
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
           });
 
           if (res.ok) {
-            emailsSent++;
+            notificationsSent++;
             await supabase
               .from("assignments")
-              .update({ email_sent: true })
+              .update({ notification_sent: true })
               .eq("room_id", roomId)
               .eq("giver_id", pair.giver.id);
           } else {
             const errData = await res.json();
-            errors.push(`${pair.giver.email}: ${errData.message || res.statusText}`);
+            errors.push(`${pair.giver.telegram_id}: ${errData.description || res.statusText}`);
           }
         } catch (e) {
-          errors.push(`${pair.giver.email}: ${String(e)}`);
+          errors.push(`${pair.giver.telegram_id}: ${String(e)}`);
         }
       }
     } else {
-      console.warn("RESEND_API_KEY is not set. Emails were not dispatched.");
+      console.warn("TELEGRAM_BOT_TOKEN is not set. Notifications were not dispatched.");
     }
 
     // 9. Оновлюємо статус кімнати на 'shuffled'
@@ -292,8 +310,8 @@ serve(async (req) => {
       JSON.stringify({
         success: true,
         totalParticipants: participants.length,
-        emailsSent,
-        hasResendKey: Boolean(resendApiKey),
+        notificationsSent,
+        hasTelegramToken: Boolean(telegramBotToken),
         errors: errors.length > 0 ? errors : undefined,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }

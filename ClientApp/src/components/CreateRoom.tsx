@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
-import { Sparkles, User, Mail, Gift, AlertCircle, ArrowRight, Check } from 'lucide-react';
+import { Sparkles, User, Gift, AlertCircle, ArrowRight, Check, Send } from 'lucide-react';
 import { createRoom } from '../api';
+import { getTelegramUser, triggerHaptic } from '../telegram';
 
 interface CreateRoomProps {
   onRoomCreated: (roomId: string, adminToken: string) => void;
 }
 
 export const CreateRoom: React.FC<CreateRoomProps> = ({ onRoomCreated }) => {
+  const tgUser = getTelegramUser();
+
   const [title, setTitle] = useState('');
-  const [hostFirstName, setHostFirstName] = useState('');
-  const [hostLastName, setHostLastName] = useState('');
-  const [hostEmail, setHostEmail] = useState('');
+  const [hostFirstName, setHostFirstName] = useState(tgUser.first_name || '');
+  const [hostLastName, setHostLastName] = useState(tgUser.last_name || '');
   const [hostParticipates, setHostParticipates] = useState(true);
   const [hostWishlist, setHostWishlist] = useState('');
   const [loading, setLoading] = useState(false);
@@ -20,8 +22,9 @@ export const CreateRoom: React.FC<CreateRoomProps> = ({ onRoomCreated }) => {
     e.preventDefault();
     setErrorMsg(null);
 
-    if (!title.trim() || !hostFirstName.trim() || !hostEmail.trim()) {
-      setErrorMsg("Будь ласка, заповніть усі обов'язкові поля.");
+    if (!title.trim() || !hostFirstName.trim()) {
+      setErrorMsg("Будь ласка, заповніть назву кімнати та ваше ім'я.");
+      triggerHaptic('warning');
       return;
     }
 
@@ -30,14 +33,17 @@ export const CreateRoom: React.FC<CreateRoomProps> = ({ onRoomCreated }) => {
       const room = await createRoom({
         title: title.trim(),
         hostFirstName: hostFirstName.trim(),
-        hostLastName: hostLastName.trim(),
-        hostEmail: hostEmail.trim(),
+        hostLastName: hostLastName.trim() || undefined,
+        hostTelegramId: tgUser.id,
+        hostUsername: tgUser.username,
         hostParticipates,
-        hostWishlist: hostWishlist.trim(),
+        hostWishlist: hostWishlist.trim() || undefined,
       });
 
+      triggerHaptic('success');
       onRoomCreated(room.id, room.adminToken);
     } catch (err: any) {
+      triggerHaptic('error');
       setErrorMsg(err.message || 'Не вдалося створити кімнату');
     } finally {
       setLoading(false);
@@ -49,10 +55,23 @@ export const CreateRoom: React.FC<CreateRoomProps> = ({ onRoomCreated }) => {
       <div className="card-header">
         <Sparkles size={24} className="text-gold flex-shrink-0" />
         <div>
-          <h2>Створити онлайн-кімнату 🎅</h2>
+          <h2>Створити кімнату в Telegram 🎅</h2>
           <p className="card-desc">
-            Створіть подію та поділіться посиланням із друзями. Кожен вкаже свої побажання, а система таємно розподілить пари та надішле листи на email.
+            Створіть святкову подію та надішліть посилання друзям прямо в Telegram! Після жеребкування бот надішле кожному особисте сповіщення з його підопічним.
           </p>
+        </div>
+      </div>
+
+      {/* Telegram User Connected Badge */}
+      <div className="tg-user-banner">
+        <div className="tg-user-avatar">
+          {hostFirstName.charAt(0).toUpperCase()}
+        </div>
+        <div className="tg-user-info">
+          <span className="tg-user-label">Вхід через Telegram:</span>
+          <span className="tg-user-name">
+            {hostFirstName} {hostLastName} {tgUser.username ? `(@${tgUser.username})` : `(ID: ${tgUser.id})`}
+          </span>
         </div>
       </div>
 
@@ -73,7 +92,7 @@ export const CreateRoom: React.FC<CreateRoomProps> = ({ onRoomCreated }) => {
             id="room-title"
             type="text"
             className="input-text"
-            placeholder="напр., Новорічний офіс 2026 або Друзі"
+            placeholder="напр., Новорічний офіс 2026 або Сім'я"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             required
@@ -84,13 +103,13 @@ export const CreateRoom: React.FC<CreateRoomProps> = ({ onRoomCreated }) => {
           <div className="form-group">
             <label htmlFor="host-first-name">
               <User size={16} />
-              <span>Ваше ім'я (Організатор) *</span>
+              <span>Ваше ім'я *</span>
             </label>
             <input
               id="host-first-name"
               type="text"
               className="input-text"
-              placeholder="Олександр"
+              placeholder="Ім'я"
               value={hostFirstName}
               onChange={(e) => setHostFirstName(e.target.value)}
               required
@@ -100,46 +119,33 @@ export const CreateRoom: React.FC<CreateRoomProps> = ({ onRoomCreated }) => {
           <div className="form-group">
             <label htmlFor="host-last-name">
               <User size={16} />
-              <span>Ваше прізвище *</span>
+              <span>Прізвище (опціонально)</span>
             </label>
             <input
               id="host-last-name"
               type="text"
               className="input-text"
-              placeholder="Щур"
+              placeholder="Прізвище"
               value={hostLastName}
               onChange={(e) => setHostLastName(e.target.value)}
-              required
             />
           </div>
         </div>
 
-        <div className="form-group">
-          <label htmlFor="host-email">
-            <Mail size={16} />
-            <span>Ваш Email *</span>
-          </label>
-          <input
-            id="host-email"
-            type="email"
-            className="input-text"
-            placeholder="host@example.com"
-            value={hostEmail}
-            onChange={(e) => setHostEmail(e.target.value)}
-            required
-          />
-        </div>
-
-        {/* Modern interactive toggle card for participating */}
+        {/* Toggle host participating */}
         <div
           className={`toggle-card ${hostParticipates ? 'active' : ''}`}
-          onClick={() => setHostParticipates(!hostParticipates)}
+          onClick={() => {
+            triggerHaptic('light');
+            setHostParticipates(!hostParticipates);
+          }}
           role="checkbox"
           aria-checked={hostParticipates}
           tabIndex={0}
           onKeyDown={(e) => {
             if (e.key === ' ' || e.key === 'Enter') {
               e.preventDefault();
+              triggerHaptic('light');
               setHostParticipates(!hostParticipates);
             }
           }}
@@ -149,7 +155,7 @@ export const CreateRoom: React.FC<CreateRoomProps> = ({ onRoomCreated }) => {
           </div>
           <div className="toggle-card-text">
             <strong>Я також беру участь у жеребкуванні</strong>
-            <span>Мене буде включено до списку як дарувальника та отримувача</span>
+            <span>Мене буде включено як дарувальника та отримувача</span>
           </div>
         </div>
 
@@ -163,7 +169,7 @@ export const CreateRoom: React.FC<CreateRoomProps> = ({ onRoomCreated }) => {
               id="host-wishlist"
               className="input-textarea"
               rows={3}
-              placeholder="Що ви любите, розмір, хобі або що точно НЕ варто дарувати..."
+              placeholder="Що ви любите, захоплення, розмір або що краще НЕ дарувати..."
               value={hostWishlist}
               onChange={(e) => setHostWishlist(e.target.value)}
             />
@@ -171,7 +177,8 @@ export const CreateRoom: React.FC<CreateRoomProps> = ({ onRoomCreated }) => {
         )}
 
         <button type="submit" className="btn btn-primary btn-lg" disabled={loading}>
-          <span>{loading ? 'Створюємо кімнату...' : 'Створити кімнату'}</span>
+          <Send size={18} />
+          <span>{loading ? 'Створюємо кімнату...' : 'Створити кімнату в Telegram'}</span>
           <ArrowRight size={20} />
         </button>
       </form>
