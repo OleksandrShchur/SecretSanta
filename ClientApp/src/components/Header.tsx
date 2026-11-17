@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { getTelegramUser, setMockTelegramUser, isInsideTelegram } from '../telegram';
+import React, { useState, useEffect, useRef } from 'react';
+import { Settings, FolderOpen } from 'lucide-react';
+import { getTelegramUser, setMockTelegramUser, isInsideTelegram, triggerHaptic } from '../telegram';
 import type { TelegramUser } from '../types';
 
 interface HeaderProps {
   onGoHome?: () => void;
+  onOpenMyRooms?: () => void;
 }
 
 const PRESET_MOCK_USERS: TelegramUser[] = [
@@ -13,10 +15,12 @@ const PRESET_MOCK_USERS: TelegramUser[] = [
   { id: 100000004, first_name: 'Олена', last_name: 'Мельник', username: 'olena_m' },
 ];
 
-export const Header: React.FC<HeaderProps> = ({ onGoHome }) => {
+export const Header: React.FC<HeaderProps> = ({ onGoHome, onOpenMyRooms }) => {
   const [currentUser, setCurrentUser] = useState<TelegramUser>(getTelegramUser());
   const [inTelegram] = useState(isInsideTelegram());
   const [showUserSwitcher, setShowUserSwitcher] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleUserChange = () => {
@@ -25,6 +29,20 @@ export const Header: React.FC<HeaderProps> = ({ onGoHome }) => {
     window.addEventListener('tg_user_changed', handleUserChange);
     return () => window.removeEventListener('tg_user_changed', handleUserChange);
   }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setShowMenu(false);
+      }
+    };
+    if (showMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showMenu]);
 
   const handleSelectMock = (user: TelegramUser) => {
     setMockTelegramUser(user);
@@ -35,6 +53,40 @@ export const Header: React.FC<HeaderProps> = ({ onGoHome }) => {
 
   return (
     <header className="christmas-header">
+      {/* Settings / Menu Gear Button */}
+      <div className="header-menu-container" ref={menuRef}>
+        <button
+          type="button"
+          className={`btn-header-gear ${showMenu ? 'active' : ''}`}
+          onClick={(e) => {
+            e.stopPropagation();
+            triggerHaptic('light');
+            setShowMenu(!showMenu);
+          }}
+          aria-label="Меню"
+          title="Меню"
+        >
+          <Settings size={18} />
+        </button>
+
+        {showMenu && (
+          <div className="header-menu-dropdown animate-fade-in">
+            <button
+              type="button"
+              className="header-menu-item"
+              onClick={() => {
+                triggerHaptic('light');
+                setShowMenu(false);
+                onOpenMyRooms?.();
+              }}
+            >
+              <FolderOpen size={16} className="text-forest" />
+              <span>Мої кімнати</span>
+            </button>
+          </div>
+        )}
+      </div>
+
       <div
         className={`header-main-content ${onGoHome ? 'is-clickable' : ''}`}
         onClick={onGoHome}

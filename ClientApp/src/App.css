@@ -1915,3 +1915,341 @@
   border: 1px solid #cbd5e1;
 }
 
+
+/* --------------------------------------------------------------------------
+   Header Settings / Menu
+   -------------------------------------------------------------------------- */
+.header-menu-container {
+  position: absolute;
+  top: 0.65rem;
+  right: 0.75rem;
+  z-index: 30;
+}
+
+.btn-header-gear {
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-header-gear:hover,
+.btn-header-gear.active {
+  background: #ffffff;
+  color: var(--color-heading-alt);
+  border-color: #cbd5e1;
+  transform: rotate(30deg);
+}
+
+.header-menu-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 170px;
+  background: #ffffff;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.12), 0 8px 10px -6px rgba(0, 0, 0, 0.08);
+  padding: 0.35rem;
+  display: flex;
+  flex-direction: column;
+  z-index: 50;
+}
+
+.header-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-sm);
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #1e293b;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.15s ease;
+}
+
+.header-menu-item:hover {
+  background-color: #f1f5f9;
+  color: var(--color-heading-alt);
+}
+
+/* --------------------------------------------------------------------------
+   My Rooms Page & Segmented Toggles
+   -------------------------------------------------------------------------- */
+.my-rooms-page-card {
+  animation: fadeSlideIn 0.3s ease-out;
+}
+
+.rooms-toggle-tabs {
+  display: flex;
+  gap: 0.35rem;
+  background: var(--color-surface-soft);
+  padding: 0.3rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  width: 100%;
+}
+
+.rooms-toggle-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.6rem 0.75rem;
+  font-size: 0.88rem;
+  font-weight: 700;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.18s ease;
+  min-height: 40px;
+  user-select: none;
+}
+
+.rooms-toggle-tab:hover:not(.active) {
+  color: #1e293b;
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.rooms-toggle-tab.active {
+  background: #ffffff;
+  color: var(--color-heading-alt);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.my-rooms-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.my-room-item {
+  background: var(--color-surface-soft);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 0.85rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  position: relative;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.my-room-item.clickable {
+  cursor: pointer;
+}
+
+.my-room-item.clickable:hover {
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.my-room-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.my-room-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.my-room-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #0f172a;
+  word-break: break-word;
+  line-height: 1.3;
+}
+
+.my-room-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.my-room-meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.78rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+/* 3-dots Card Menu */
+.card-menu-container {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.btn-card-menu {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-card-menu:hover,
+.btn-card-menu:focus-visible {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.card-menu-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  min-width: 155px;
+  background: #ffffff;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 8px 20px -4px rgba(0, 0, 0, 0.15), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  padding: 0.3rem;
+  display: flex;
+  flex-direction: column;
+  z-index: 40;
+}
+
+.card-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: 100%;
+  padding: 0.55rem 0.75rem;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-sm);
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.card-menu-item:hover {
+  background-color: #f1f5f9;
+  color: #0f172a;
+}
+
+.card-menu-item-warning {
+  color: #b45309;
+}
+
+.card-menu-item-warning:hover {
+  background-color: #fffbeb;
+  color: #92400e;
+}
+
+.card-menu-item-danger {
+  color: #dc2626;
+}
+
+.card-menu-item-danger:hover {
+  background-color: #fef2f2;
+  color: #b91c1c;
+}
+
+.rooms-empty-box {
+  padding: 2.5rem 1rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.empty-subtext {
+  font-size: 0.82rem;
+  color: #94a3b8;
+  max-width: 280px;
+}
+
+.status-pill-sm {
+  font-size: 0.72rem;
+  padding: 0.2rem 0.55rem;
+}
+
+.status-pill-closed {
+  background-color: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+}
+
+/* Room management actions in dashboard */
+.room-manage-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  padding-top: 0.25rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.btn-deactivate {
+  color: #d97706 !important;
+  border-color: #fde68a !important;
+}
+
+.btn-deactivate:hover:not(:disabled) {
+  background-color: #fffbeb !important;
+  border-color: #fbbf24 !important;
+  color: #92400e !important;
+}
+
+.btn-delete {
+  color: #ef4444 !important;
+  border-color: #fecaca !important;
+}
+
+.btn-delete:hover:not(:disabled) {
+  background-color: #fef2f2 !important;
+  border-color: #f87171 !important;
+  color: #b91c1c !important;
+}
+
+.text-muted {
+  color: #94a3b8;
+}
+
+@keyframes fadeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

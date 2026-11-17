@@ -91,6 +91,94 @@ public class RoomsController : ControllerBase
         );
     }
 
+    // 1b. Список кімнат, створених користувачем (за Telegram ID)
+    [HttpGet("my")]
+    public async Task<ActionResult<List<RoomSummaryDto>>> GetMyRooms([FromQuery] long telegramId)
+    {
+        if (telegramId == 0)
+        {
+            return BadRequest("Telegram ID є обов'язковим.");
+        }
+
+        var rooms = await _db.Rooms
+            .Where(r => r.HostTelegramId == telegramId)
+            .OrderByDescending(r => r.CreatedAt)
+            .Select(r => new RoomSummaryDto(
+                r.Id,
+                r.Title,
+                r.Status,
+                r.Participants.Count,
+                r.CreatedAt,
+                r.AdminToken
+            ))
+            .ToListAsync();
+
+        return Ok(rooms);
+    }
+
+    // 1b2. Список кімнат, де користувач є учасником (або був учасником)
+    [HttpGet("participating")]
+    public async Task<ActionResult<List<RoomParticipationDto>>> GetParticipatingRooms([FromQuery] long telegramId)
+    {
+        if (telegramId == 0)
+        {
+            return BadRequest("Telegram ID є обов'язковим.");
+        }
+
+        var rooms = await _db.Rooms
+            .Where(r => r.Participants.Any(p => p.TelegramId == telegramId))
+            .OrderByDescending(r => r.CreatedAt)
+            .Select(r => new RoomParticipationDto(
+                r.Id,
+                r.Title,
+                r.HostName,
+                r.Status,
+                r.Participants.Count,
+                r.CreatedAt
+            ))
+            .ToListAsync();
+
+        return Ok(rooms);
+    }
+
+    // 1c. Деактивація кімнати (закриття для нових учасників)
+    [HttpPatch("{id:guid}/deactivate")]
+    public async Task<IActionResult> Deactivate(Guid id, [FromQuery] string adminToken)
+    {
+        var room = await _db.Rooms.FindAsync(id);
+        if (room == null || room.AdminToken != adminToken)
+        {
+            return Unauthorized("Недійсний токен організатора або кімнату не знайдено.");
+        }
+
+        if (room.Status == "closed")
+        {
+            return BadRequest("Кімната вже деактивована.");
+        }
+
+        room.Status = "closed";
+        await _db.SaveChangesAsync();
+
+        return Ok(new { success = true, status = room.Status });
+    }
+
+    // 1d. Видалення кімнати (разом з усіма даними)
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> DeleteRoom(Guid id, [FromQuery] string adminToken)
+    {
+        var room = await _db.Rooms.FindAsync(id);
+        if (room == null || room.AdminToken != adminToken)
+        {
+            return Unauthorized("Недійсний токен організатора або кімнату не знайдено.");
+        }
+
+        // Cascade delete видалить Participants, Restrictions, Assignments
+        _db.Rooms.Remove(room);
+        await _db.SaveChangesAsync();
+
+        return NoContent();
+    }
+
     // 2. Публічна інформація про кімнату (для сторінки приєднання)
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<RoomPublicDto>> GetPublic(Guid id)

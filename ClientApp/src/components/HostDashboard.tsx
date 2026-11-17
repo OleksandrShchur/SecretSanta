@@ -13,6 +13,7 @@ import {
   Share2,
   Key,
   MessageCircle,
+  Power,
 } from 'lucide-react';
 import type { RoomAdmin, TelegramConfig } from '../types';
 import {
@@ -21,6 +22,8 @@ import {
   saveRestrictions,
   performShuffle,
   getTelegramConfig,
+  deactivateRoom,
+  deleteRoom,
 } from '../api';
 import { getTelegramUser, openTelegramShare, triggerHaptic } from '../telegram';
 import { MyAssignmentCard } from './MyAssignmentCard';
@@ -31,7 +34,7 @@ interface HostDashboardProps {
   onGoHome?: () => void;
 }
 
-export const HostDashboard: React.FC<HostDashboardProps> = ({ roomId, adminToken }) => {
+export const HostDashboard: React.FC<HostDashboardProps> = ({ roomId, adminToken, onGoHome }) => {
   const tgUser = getTelegramUser();
 
   const [room, setRoom] = useState<RoomAdmin | null>(null);
@@ -51,6 +54,8 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({ roomId, adminToken
   // Shuffle
   const [shuffling, setShuffling] = useState(false);
   const [shuffleSuccessMsg, setShuffleSuccessMsg] = useState<string | null>(null);
+  const [deactivating, setDeactivating] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     getTelegramConfig().then(setTgConfig);
@@ -198,6 +203,42 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({ roomId, adminToken
     }
   };
 
+  const handleDeactivateRoom = async () => {
+    if (!room) return;
+    if (!confirm(`Деактивувати кімнату «${room.title}»?\n\nКімнату буде закрито для нових учасників.`)) return;
+
+    setDeactivating(true);
+    triggerHaptic('warning');
+    try {
+      await deactivateRoom(roomId, adminToken);
+      triggerHaptic('success');
+      await fetchRoomData(true);
+    } catch (err: any) {
+      triggerHaptic('error');
+      alert('Помилка деактивації: ' + err.message);
+    } finally {
+      setDeactivating(false);
+    }
+  };
+
+  const handleDeleteRoom = async () => {
+    if (!room) return;
+    if (!confirm(`Видалити кімнату «${room.title}»?\n\n⚠️ Це видалить усіх учасників, жеребкування та всі дані кімнати назавжди!`)) return;
+
+    setDeleting(true);
+    triggerHaptic('warning');
+    try {
+      await deleteRoom(roomId, adminToken);
+      triggerHaptic('success');
+      onGoHome?.();
+    } catch (err: any) {
+      triggerHaptic('error');
+      alert('Помилка видалення: ' + err.message);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="card loading-card">
@@ -217,6 +258,7 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({ roomId, adminToken
   }
 
   const isShuffled = room.status === 'shuffled';
+  const isClosed = room.status === 'closed';
   const hostIsParticipant = room.participants.some((p) => p.telegramId === tgUser.id);
 
   return (
@@ -231,10 +273,10 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({ roomId, adminToken
           <div className="header-actions">
             <span
               className={`status-pill ${
-                isShuffled ? 'status-pill-shuffled' : 'status-pill-collecting'
+                isShuffled ? 'status-pill-shuffled' : isClosed ? 'status-pill-closed' : 'status-pill-collecting'
               }`}
             >
-              {isShuffled ? 'Жеребкування проведено 🎉' : 'Збір учасників 🎅'}
+              {isShuffled ? 'Жеребкування проведено 🎉' : isClosed ? 'Деактивовано 🔒' : 'Збір учасників 🎅'}
             </span>
             <button
               type="button"
@@ -270,6 +312,32 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({ roomId, adminToken
             <span>{shuffleSuccessMsg}</span>
           </div>
         )}
+
+        {/* Room Management Actions */}
+        <div className="room-manage-actions">
+          {room.status === 'collecting' && (
+            <button
+              type="button"
+              className="btn btn-sm btn-outline btn-deactivate"
+              onClick={handleDeactivateRoom}
+              disabled={deactivating}
+              title="Деактивувати кімнату"
+            >
+              <Power size={14} />
+              <span>{deactivating ? 'Деактивація...' : 'Деактивувати кімнату'}</span>
+            </button>
+          )}
+          <button
+            type="button"
+            className="btn btn-sm btn-outline btn-delete"
+            onClick={handleDeleteRoom}
+            disabled={deleting}
+            title="Видалити кімнату"
+          >
+            <Trash2 size={14} />
+            <span>{deleting ? 'Видалення...' : 'Видалити кімнату'}</span>
+          </button>
+        </div>
       </div>
 
       {/* Host's Own Assignment Card (if shuffled and host participates) */}
@@ -280,7 +348,7 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({ roomId, adminToken
       )}
 
       {/* Invite Card via Telegram */}
-      {!isShuffled && (
+      {!isShuffled && !isClosed && (
         <div className="card invite-card">
           <div className="card-header">
             <MessageCircle size={22} className="text-forest flex-shrink-0" />
@@ -383,7 +451,7 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({ roomId, adminToken
                     </div>
                   </div>
 
-                  {!isShuffled && (
+                  {!isShuffled && !isClosed && (
                     <button
                       type="button"
                       className="btn-icon-danger"
@@ -479,6 +547,7 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({ roomId, adminToken
       )}
 
       {/* Shuffle Section */}
+      {!isClosed && (
       <div className="card shuffle-card">
         {isShuffled ? (
           <div className="shuffled-box">
@@ -511,6 +580,20 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({ roomId, adminToken
           </div>
         )}
       </div>
+      )}
+
+      {/* Closed room message */}
+      {isClosed && (
+        <div className="card shuffle-card">
+          <div className="shuffled-box">
+            <Power size={36} className="text-muted" />
+            <h3>Кімнату деактивовано 🔒</h3>
+            <p>
+              Ця кімната закрита для нових учасників та жеребкування. Ви можете видалити її або залишити для архіву.
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

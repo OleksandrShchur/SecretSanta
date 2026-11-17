@@ -117,6 +117,25 @@ export const JoinRoom: React.FC<JoinRoomProps> = ({ roomId, onGoHome }) => {
     );
   }
 
+  // If closed/deactivated, show a message
+  if (room.status === 'closed') {
+    return (
+      <div className="card text-center">
+        <AlertCircle size={36} className="text-muted mx-auto" />
+        <h2>Кімнату деактивовано 🔒</h2>
+        <p className="card-desc">
+          Кімната «{room.title}» була деактивована організатором і більше не приймає учасників.
+        </p>
+        {onGoHome && (
+          <button type="button" className="btn btn-secondary mt-3 mx-auto" onClick={onGoHome}>
+            <ArrowLeft size={16} />
+            <span>На головну</span>
+          </button>
+        )}
+      </div>
+    );
+  }
+
   if (joined) {
     return (
       <div className="card success-card text-center">

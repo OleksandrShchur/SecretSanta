@@ -24,6 +24,24 @@ export interface RoomPublic {
   createdAt: string;
 }
 
+export interface RoomSummary {
+  id: string;
+  title: string;
+  status: 'collecting' | 'shuffled' | 'closed';
+  participantCount: number;
+  createdAt: string;
+  adminToken: string;
+}
+
+export interface RoomParticipation {
+  id: string;
+  title: string;
+  hostName: string;
+  status: 'collecting' | 'shuffled' | 'closed';
+  participantCount: number;
+  createdAt: string;
+}
+
 export interface RoomAdmin {
   id: string;
   title: string;

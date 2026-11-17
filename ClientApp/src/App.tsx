@@ -5,6 +5,7 @@ import { Header } from './components/Header';
 import { Navbar } from './components/Navbar';
 import { OfflineGenerator } from './components/OfflineGenerator';
 import { CreateRoom } from './components/CreateRoom';
+import { MyRooms } from './components/MyRooms';
 import { HostDashboard } from './components/HostDashboard';
 import { JoinRoom } from './components/JoinRoom';
 import { initTelegramApp, getTelegramStartParam, triggerHaptic } from './telegram';
@@ -14,6 +15,7 @@ export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'offline' | 'online'>('online');
   const [currentRoomId, setCurrentRoomId] = useState<string | null>(null);
   const [currentAdminToken, setCurrentAdminToken] = useState<string | null>(null);
+  const [showMyRooms, setShowMyRooms] = useState(false);
 
   useEffect(() => {
     initTelegramApp();
@@ -26,9 +28,11 @@ export const App: React.FC = () => {
     if (startParam && admin) {
       setCurrentRoomId(startParam);
       setCurrentAdminToken(admin);
+      setShowMyRooms(false);
       setActiveTab('online');
     } else if (startParam) {
       setCurrentRoomId(startParam);
+      setShowMyRooms(false);
       setActiveTab('online');
     } else if (tab === 'offline') {
       setActiveTab('offline');
@@ -41,6 +45,7 @@ export const App: React.FC = () => {
     setActiveTab(tab);
     setCurrentRoomId(null);
     setCurrentAdminToken(null);
+    setShowMyRooms(false);
     const url = new URL(window.location.href);
     url.search = tab === 'offline' ? '?tab=offline' : '';
     window.history.pushState({}, '', url.toString());
@@ -50,6 +55,7 @@ export const App: React.FC = () => {
     triggerHaptic('light');
     setCurrentRoomId(null);
     setCurrentAdminToken(null);
+    setShowMyRooms(false);
     const url = new URL(window.location.href);
     url.search = activeTab === 'offline' ? '?tab=offline' : '';
     window.history.pushState({}, '', url.toString());
@@ -58,12 +64,48 @@ export const App: React.FC = () => {
   const handleRoomCreated = (roomId: string, adminToken: string) => {
     setCurrentRoomId(roomId);
     setCurrentAdminToken(adminToken);
+    setShowMyRooms(false);
     const url = new URL(window.location.href);
     url.search = `?room=${roomId}&admin=${adminToken}`;
     window.history.pushState({}, '', url.toString());
   };
 
+  const handleOpenRoomAsHost = (roomId: string, adminToken: string) => {
+    setCurrentRoomId(roomId);
+    setCurrentAdminToken(adminToken);
+    setShowMyRooms(false);
+    const url = new URL(window.location.href);
+    url.search = `?room=${roomId}&admin=${adminToken}`;
+    window.history.pushState({}, '', url.toString());
+  };
+
+  const handleOpenRoomAsParticipant = (roomId: string) => {
+    setCurrentRoomId(roomId);
+    setCurrentAdminToken(null);
+    setShowMyRooms(false);
+    const url = new URL(window.location.href);
+    url.search = `?room=${roomId}`;
+    window.history.pushState({}, '', url.toString());
+  };
+
+  const handleOpenMyRooms = () => {
+    triggerHaptic('light');
+    setShowMyRooms(true);
+    setCurrentRoomId(null);
+    setCurrentAdminToken(null);
+  };
+
   const renderContent = () => {
+    if (showMyRooms) {
+      return (
+        <MyRooms
+          onOpenRoomAsHost={handleOpenRoomAsHost}
+          onOpenRoomAsParticipant={handleOpenRoomAsParticipant}
+          onBack={handleGoHome}
+        />
+      );
+    }
+
     if (activeTab === 'online') {
       if (currentRoomId && currentAdminToken) {
         return (
@@ -98,9 +140,12 @@ export const App: React.FC = () => {
         snowflakeCount={150}
       />
       <div className="app-container">
-        <Header onGoHome={currentRoomId ? handleGoHome : undefined} />
+        <Header
+          onGoHome={currentRoomId || showMyRooms ? handleGoHome : undefined}
+          onOpenMyRooms={handleOpenMyRooms}
+        />
         <main className="main-content">
-          {!currentRoomId ? (
+          {!currentRoomId && !showMyRooms ? (
             <Navbar activeTab={activeTab} onTabChange={handleTabChange} />
           ) : (
             <div className="room-nav-bar">
@@ -108,13 +153,17 @@ export const App: React.FC = () => {
                 type="button"
                 className="btn-nav-back"
                 onClick={handleGoHome}
-                aria-label="Повернутися до вибору режимів"
+                aria-label="Повернутися на головну"
               >
                 <ArrowLeft size={16} />
                 <span>На головну</span>
               </button>
               <span className="room-nav-pill">
-                {currentAdminToken ? '👑 Панель організатора' : '🎁 Кімната учасника'}
+                {showMyRooms
+                  ? '📁 Мої кімнати'
+                  : currentAdminToken
+                  ? '👑 Панель організатора'
+                  : '🎁 Кімната учасника'}
               </span>
             </div>
           )}
