@@ -51,7 +51,6 @@ export const Header: React.FC<HeaderProps> = ({ onGoHome }) => {
         <img src="/tree.svg" className="tree left" alt="Ялинка" aria-hidden="true" />
         <div className="header-title-wrap">
           <h1>Таємний Санта</h1>
-          <p className="header-subtitle">Telegram Mini App 🎅🎁</p>
         </div>
         <img src="/tree.svg" className="tree right" alt="Ялинка" aria-hidden="true" />
       </div>

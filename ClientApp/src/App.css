@@ -50,7 +50,7 @@
   -webkit-backdrop-filter: blur(10px);
   position: relative;
   z-index: 10;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: box-shadow 0.2s ease;
 }
 
 @media (min-width: 640px) {
@@ -96,7 +96,7 @@
   color: var(--color-heading);
   text-align: center;
   font-weight: 800;
-  font-size: clamp(1.2rem, 5vw, 1.85rem);
+  font-size: 1.45rem;
   letter-spacing: -0.02em;
   line-height: 1.15;
   border-bottom: 2.5px solid var(--color-accent-gold);
@@ -104,17 +104,30 @@
   white-space: nowrap;
 }
 
+@media (min-width: 640px) {
+  .christmas-header h1 {
+    font-size: 1.85rem;
+  }
+}
+
 .header-subtitle {
   margin: 0.35rem 0 0;
-  font-size: clamp(0.72rem, 2.8vw, 0.88rem);
+  font-size: 0.8rem;
   color: var(--color-heading-alt);
   font-weight: 600;
   white-space: nowrap;
 }
 
+@media (min-width: 640px) {
+  .header-subtitle {
+    font-size: 0.88rem;
+  }
+}
+
 .tree {
   width: 28px;
-  height: auto;
+  height: 28px;
+  aspect-ratio: 1 / 1;
   flex-shrink: 0;
   filter: drop-shadow(0 2px 4px rgba(0, 100, 0, 0.15));
 }
@@ -122,6 +135,7 @@
 @media (min-width: 640px) {
   .tree {
     width: 42px;
+    height: 42px;
   }
 }
 

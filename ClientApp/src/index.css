@@ -36,6 +36,8 @@ html {
   font-size: 16px;
   -webkit-text-size-adjust: 100%;
   overflow-x: hidden;
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
   width: 100%;
 }
 
@@ -54,36 +56,103 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Новорічна гірлянда у верхній частині (абсолютне позиціонування, щоб не перекривати контент при прокрутці) */
+/* Новорічна гірлянда у верхній частині з м'яким мерехтінням */
+body::before,
 body::after {
   content: "";
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
-  height: 22px;
+  height: 26px;
   pointer-events: none;
   z-index: 10;
-  background-image:
-    radial-gradient(circle at 15px 10px, #ef4444 3px, transparent 4px),
-    radial-gradient(circle at 45px 6px, #eab308 3px, transparent 4px),
-    radial-gradient(circle at 75px 12px, #22c55e 3px, transparent 4px),
-    radial-gradient(circle at 105px 7px, #3b82f6 3px, transparent 4px),
-    radial-gradient(circle at 135px 11px, #ec4899 3px, transparent 4px);
-  background-size: 150px 22px;
+  background-size: 150px 26px;
   background-repeat: repeat-x;
-  opacity: 0.85;
+  will-change: opacity, filter;
+}
+
+/* Перша група вогників (червоний, зелений, рожевий) */
+body::before {
+  background-image:
+    radial-gradient(circle at 15px 10px, #fff5f5 0.5px, #ef4444 3px, rgba(239, 68, 68, 0.25) 4px, transparent 4.5px),
+    radial-gradient(circle at 75px 12px, #f0fdf4 0.5px, #22c55e 3px, rgba(34, 197, 94, 0.25) 4px, transparent 4.5px),
+    radial-gradient(circle at 135px 11px, #fdf2f8 0.5px, #ec4899 3px, rgba(236, 72, 153, 0.25) 4px, transparent 4.5px);
+  animation: garland-sparkle-1 3.2s ease-in-out infinite;
+}
+
+/* Друга група вогників (жовтий, синій) */
+body::after {
+  background-image:
+    radial-gradient(circle at 45px 6px, #fefce8 0.5px, #eab308 3px, rgba(234, 179, 8, 0.25) 4px, transparent 4.5px),
+    radial-gradient(circle at 105px 7px, #eff6ff 0.5px, #3b82f6 3px, rgba(59, 130, 246, 0.25) 4px, transparent 4.5px);
+  animation: garland-sparkle-2 2.6s ease-in-out infinite;
 }
 
 @media (min-width: 640px) {
+  body::before,
   body::after {
-    height: 36px;
+    height: 40px;
+    background-size: 200px 40px;
+  }
+
+  body::before {
     background-image:
-      radial-gradient(circle at 20px 16px, #ef4444 4.5px, transparent 5.5px),
-      radial-gradient(circle at 60px 10px, #eab308 4.5px, transparent 5.5px),
-      radial-gradient(circle at 100px 18px, #22c55e 4.5px, transparent 5.5px),
-      radial-gradient(circle at 140px 11px, #3b82f6 4.5px, transparent 5.5px),
-      radial-gradient(circle at 180px 17px, #ec4899 4.5px, transparent 5.5px);
-    background-size: 200px 36px;
+      radial-gradient(circle at 20px 16px, #fff5f5 1px, #ef4444 4.5px, rgba(239, 68, 68, 0.3) 6px, transparent 6.5px),
+      radial-gradient(circle at 100px 18px, #f0fdf4 1px, #22c55e 4.5px, rgba(34, 197, 94, 0.3) 6px, transparent 6.5px),
+      radial-gradient(circle at 180px 17px, #fdf2f8 1px, #ec4899 4.5px, rgba(236, 72, 153, 0.3) 6px, transparent 6.5px);
+  }
+
+  body::after {
+    background-image:
+      radial-gradient(circle at 60px 10px, #fefce8 1px, #eab308 4.5px, rgba(234, 179, 8, 0.3) 6px, transparent 6.5px),
+      radial-gradient(circle at 140px 11px, #eff6ff 1px, #3b82f6 4.5px, rgba(59, 130, 246, 0.3) 6px, transparent 6.5px);
+  }
+}
+
+@keyframes garland-sparkle-1 {
+  0%, 100% {
+    opacity: 0.72;
+    filter: brightness(0.92) drop-shadow(0 0 1px rgba(255, 255, 255, 0.2));
+  }
+  35% {
+    opacity: 0.85;
+    filter: brightness(1.05) drop-shadow(0 0 2px rgba(239, 68, 68, 0.35));
+  }
+  50% {
+    opacity: 1;
+    filter: brightness(1.28) drop-shadow(0 0 3px rgba(255, 255, 255, 0.7)) drop-shadow(0 0 6px rgba(239, 68, 68, 0.5));
+  }
+  65% {
+    opacity: 0.88;
+    filter: brightness(1.1) drop-shadow(0 0 2px rgba(34, 197, 94, 0.35));
+  }
+}
+
+@keyframes garland-sparkle-2 {
+  0%, 100% {
+    opacity: 1;
+    filter: brightness(1.25) drop-shadow(0 0 3px rgba(255, 255, 255, 0.7)) drop-shadow(0 0 6px rgba(234, 179, 8, 0.5));
+  }
+  25% {
+    opacity: 0.85;
+    filter: brightness(1.05) drop-shadow(0 0 2px rgba(59, 130, 246, 0.35));
+  }
+  50% {
+    opacity: 0.7;
+    filter: brightness(0.9) drop-shadow(0 0 1px rgba(255, 255, 255, 0.2));
+  }
+  75% {
+    opacity: 0.88;
+    filter: brightness(1.1) drop-shadow(0 0 2px rgba(234, 179, 8, 0.35));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body::before,
+  body::after {
+    animation: none;
+    opacity: 0.85;
+    filter: none;
   }
 }

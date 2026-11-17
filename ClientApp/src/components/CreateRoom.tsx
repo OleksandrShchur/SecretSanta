@@ -62,19 +62,6 @@ export const CreateRoom: React.FC<CreateRoomProps> = ({ onRoomCreated }) => {
         </div>
       </div>
 
-      {/* Telegram User Connected Badge */}
-      <div className="tg-user-banner">
-        <div className="tg-user-avatar">
-          {hostFirstName.charAt(0).toUpperCase()}
-        </div>
-        <div className="tg-user-info">
-          <span className="tg-user-label">Вхід через Telegram:</span>
-          <span className="tg-user-name">
-            {hostFirstName} {hostLastName} {tgUser.username ? `(@${tgUser.username})` : `(ID: ${tgUser.id})`}
-          </span>
-        </div>
-      </div>
-
       {errorMsg && (
         <div className="alert-error" role="alert">
           <AlertCircle size={18} className="flex-shrink-0" />
