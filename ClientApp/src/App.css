@@ -2459,32 +2459,37 @@
 }
 
 .my-registration-card {
-  background: #f0fdf4;
-  border: 1px solid #bbf7d0;
-  box-shadow: 0 4px 14px rgba(22, 101, 52, 0.06);
+  background: #ffffff;
+  border: 1px solid #d1fae5;
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
 }
 
-.my-reg-header {
+.reg-card-topbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
   flex-wrap: wrap;
   padding-bottom: 0.85rem;
-  margin-bottom: 1rem;
-  border-bottom: 1px dashed #86efac;
+  border-bottom: 1px solid #f1f5f9;
 }
 
-.my-reg-title-wrap {
-  display: flex;
+.reg-status-badge {
+  display: inline-flex;
   align-items: center;
-  gap: 0.65rem;
-}
-
-.my-reg-badge {
-  font-size: 0.95rem;
-  font-weight: 800;
-  color: #166534;
+  gap: 0.5rem;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #065f46;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  padding: 0.35rem 0.75rem;
+  border-radius: 9999px;
 }
 
 .btn-edit-profile {
@@ -2496,74 +2501,115 @@
   gap: 0.35rem;
 }
 
-.readonly-profile-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.75rem;
-  margin-bottom: 0.75rem;
+.reg-user-profile-row {
+  display: flex;
+  align-items: center;
+  gap: 0.95rem;
+  padding: 0.25rem 0;
 }
 
-@media (max-width: 520px) {
-  .readonly-profile-grid {
-    grid-template-columns: 1fr;
-  }
+.reg-user-avatar {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #059669, #10b981);
+  color: #ffffff;
+  font-size: 1.25rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25);
 }
 
-.readonly-field {
+.reg-user-details {
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
-  background: #ffffff;
-  border: 1px solid #dcfce7;
-  border-radius: var(--radius-md);
-  padding: 0.75rem 0.95rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  gap: 0.2rem;
+  min-width: 0;
 }
 
-.readonly-field-full {
-  grid-column: 1 / -1;
+.reg-user-fullname {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.25;
+  overflow-wrap: break-word;
 }
 
-.readonly-label {
-  font-size: 0.72rem;
+.reg-user-handle {
+  font-size: 0.88rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.reg-wishlist-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.reg-section-header {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.reg-section-title {
+  font-size: 0.78rem;
   font-weight: 700;
-  color: #15803d;
+  color: #047857;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
-.readonly-value {
+.reg-wishlist-content-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-left: 4px solid #10b981;
+  border-radius: var(--radius-md);
+  padding: 0.85rem 1.05rem;
+}
+
+.reg-wishlist-text {
   font-size: 0.98rem;
-  font-weight: 700;
-  color: #0f172a;
-  overflow-wrap: break-word;
-}
-
-.readonly-wishlist-box {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.6rem;
-  background: #fffbeb;
-  border: 1px solid #fde68a;
-  border-radius: var(--radius-sm);
-  padding: 0.75rem 0.95rem;
-  margin-top: 0.25rem;
-}
-
-.readonly-wishlist-text {
-  font-size: 0.92rem;
-  color: #78350f;
-  font-style: italic;
+  font-weight: 500;
+  color: #1e293b;
+  line-height: 1.55;
   white-space: pre-line;
-  line-height: 1.45;
   margin: 0;
 }
 
-.readonly-wishlist-empty {
-  font-size: 0.85rem;
+.reg-wishlist-empty-box {
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: var(--radius-md);
+  padding: 0.85rem 1.05rem;
+}
+
+.reg-wishlist-empty-text {
+  font-size: 0.88rem;
   color: #64748b;
-  font-style: italic;
-  margin-top: 0.2rem;
+  margin: 0;
+  line-height: 1.45;
+}
+
+.reg-info-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: var(--radius-md);
+  padding: 0.75rem 0.95rem;
+}
+
+.reg-info-hint p {
+  font-size: 0.85rem;
+  color: #166534;
+  line-height: 1.45;
+  margin: 0;
 }
 
 .edit-profile-card {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Snowfall from 'react-snowfall';
 import { Header } from './components/Header';
 import { Navbar } from './components/Navbar';
@@ -61,6 +61,8 @@ export const App: React.FC = () => {
   const [currentAdminToken, setCurrentAdminToken] = useState<string | null>(initialRoute.currentAdminToken);
   const [showMyRooms, setShowMyRooms] = useState(initialRoute.showMyRooms);
 
+  const internalNavCount = useRef(0);
+
   const syncStateFromUrl = useCallback(() => {
     const next = getInitialRouteState();
     setActiveTab(next.activeTab);
@@ -74,6 +76,7 @@ export const App: React.FC = () => {
     syncStateFromUrl();
 
     const handlePopState = () => {
+      internalNavCount.current = Math.max(0, internalNavCount.current - 1);
       syncStateFromUrl();
     };
 
@@ -87,6 +90,7 @@ export const App: React.FC = () => {
   const handleGoHome = useCallback((replace = false) => {
     triggerHaptic('light');
     clearTelegramStartParam();
+    internalNavCount.current = 0;
     const url = new URL(window.location.href);
     url.search = activeTab === 'offline' ? '?tab=offline' : '';
     if (replace) {
@@ -99,7 +103,8 @@ export const App: React.FC = () => {
 
   const handleBack = useCallback(() => {
     triggerHaptic('light');
-    if (window.history.length > 1) {
+    if (internalNavCount.current > 0) {
+      internalNavCount.current = Math.max(0, internalNavCount.current - 1);
       window.history.back();
     } else {
       handleGoHome(false);
@@ -116,6 +121,7 @@ export const App: React.FC = () => {
   }, [currentRoomId, showMyRooms, handleBack]);
 
   const handleTabChange = (tab: 'offline' | 'online') => {
+    internalNavCount.current++;
     const url = new URL(window.location.href);
     url.search = tab === 'offline' ? '?tab=offline' : '';
     window.history.pushState({}, '', url.toString());
@@ -123,6 +129,7 @@ export const App: React.FC = () => {
   };
 
   const handleRoomCreated = (roomId: string, adminToken: string) => {
+    internalNavCount.current++;
     const url = new URL(window.location.href);
     url.search = `?room=${roomId}&admin=${adminToken}`;
     window.history.pushState({}, '', url.toString());
@@ -130,6 +137,7 @@ export const App: React.FC = () => {
   };
 
   const handleOpenRoomAsHost = (roomId: string, adminToken: string) => {
+    internalNavCount.current++;
     const url = new URL(window.location.href);
     url.search = `?room=${roomId}&admin=${adminToken}`;
     window.history.pushState({}, '', url.toString());
@@ -137,6 +145,7 @@ export const App: React.FC = () => {
   };
 
   const handleOpenRoomAsParticipant = (roomId: string) => {
+    internalNavCount.current++;
     const url = new URL(window.location.href);
     url.search = `?room=${roomId}`;
     window.history.pushState({}, '', url.toString());
@@ -145,6 +154,7 @@ export const App: React.FC = () => {
 
   const handleOpenMyRooms = () => {
     triggerHaptic('light');
+    internalNavCount.current++;
     const url = new URL(window.location.href);
     url.search = '?view=my-rooms';
     window.history.pushState({}, '', url.toString());

@@ -238,10 +238,11 @@ export const JoinRoom: React.FC<JoinRoomProps> = ({ roomId, onGoHome }) => {
 
     return (
       <div className="card my-registration-card">
-        <div className="my-reg-header">
-          <div className="my-reg-title-wrap">
-            <CheckCircle2 size={22} className="text-forest flex-shrink-0" />
-            <span className="my-reg-badge">Ви берете участь у цій кімнаті 🎉</span>
+        {/* Top bar with Status Badge + Edit button */}
+        <div className="reg-card-topbar">
+          <div className="reg-status-badge">
+            <CheckCircle2 size={16} className="text-forest flex-shrink-0" />
+            <span>Ви берете участь у грі 🎉</span>
           </div>
 
           {room.status === 'collecting' && !isEditing && (
@@ -253,46 +254,54 @@ export const JoinRoom: React.FC<JoinRoomProps> = ({ roomId, onGoHome }) => {
                 setIsEditing(true);
               }}
             >
-              <Pencil size={14} />
+              <Pencil size={13} />
               <span>Змінити дані</span>
             </button>
           )}
         </div>
 
-        <div className="readonly-profile-grid">
-          <div className="readonly-field">
-            <span className="readonly-label">Ваше ім'я та прізвище</span>
-            <span className="readonly-value">
-              {room.myRegistration.firstName} {room.myRegistration.lastName}
-            </span>
+        {/* User Identity Row: Avatar, Name, Handle */}
+        <div className="reg-user-profile-row">
+          <div className="reg-user-avatar">
+            {(room.myRegistration.firstName || 'U').charAt(0).toUpperCase()}
           </div>
-
-          <div className="readonly-field">
-            <span className="readonly-label">Зареєстрований Telegram</span>
-            <span className="readonly-value">
+          <div className="reg-user-details">
+            <strong className="reg-user-fullname">
+              {room.myRegistration.firstName} {room.myRegistration.lastName}
+            </strong>
+            <span className="reg-user-handle">
               {tgUser.username ? `@${tgUser.username.replace(/^@/, '')}` : `ID: ${tgUser.id}`}
             </span>
           </div>
-
-          <div className="readonly-field readonly-field-full">
-            <span className="readonly-label">Ваші побажання до подарунка</span>
-            {room.myRegistration.wishlist ? (
-              <div className="readonly-wishlist-box">
-                <Gift size={16} className="text-gold flex-shrink-0 mt-0.5" />
-                <p className="readonly-wishlist-text">{room.myRegistration.wishlist}</p>
-              </div>
-            ) : (
-              <span className="readonly-wishlist-empty">
-                (Побажання не вказано — ваш Санта обере подарунок від щирого серця! 🎄)
-              </span>
-            )}
-          </div>
         </div>
 
+        {/* Wishlist Box - High Contrast, Clean Typography */}
+        <div className="reg-wishlist-section">
+          <div className="reg-section-header">
+            <Gift size={16} className="text-forest flex-shrink-0" />
+            <span className="reg-section-title">Ваші побажання до подарунка</span>
+          </div>
+          {room.myRegistration.wishlist ? (
+            <div className="reg-wishlist-content-box">
+              <p className="reg-wishlist-text">
+                «{room.myRegistration.wishlist}»
+              </p>
+            </div>
+          ) : (
+            <div className="reg-wishlist-empty-box">
+              <p className="reg-wishlist-empty-text">
+                Побажань не вказано — Санта обере подарунок на власний розсуд 🎄
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Status Notice */}
         {room.status === 'collecting' && (
-          <div className="success-box mt-1">
-            <p className="success-hint">
-              Щойно організатор (<strong>{room.hostName}</strong>) проведе жеребкування, бот надішле вам особисте повідомлення в Telegram з інформацією про вашого підопічного! 🎅✨
+          <div className="reg-info-hint">
+            <Sparkles size={16} className="text-forest flex-shrink-0 mt-0.5" />
+            <p>
+              Щойно організатор (<strong>{room.hostName}</strong>) запустить жеребкування, бот надішле вам особисте повідомлення в Telegram з інформацією про вашого підопічного! 🎅✨
             </p>
           </div>
         )}
@@ -317,13 +326,6 @@ export const JoinRoom: React.FC<JoinRoomProps> = ({ roomId, onGoHome }) => {
         {isParticipant && renderMyReadOnlyProfile()}
 
         {renderParticipantsList()}
-
-        {onGoHome && (
-          <button type="button" className="btn btn-secondary mt-3 mx-auto" onClick={onGoHome}>
-            <ArrowLeft size={16} />
-            <span>На головну</span>
-          </button>
-        )}
       </div>
     );
   }
@@ -343,13 +345,6 @@ export const JoinRoom: React.FC<JoinRoomProps> = ({ roomId, onGoHome }) => {
         {isParticipant && renderMyReadOnlyProfile()}
 
         {renderParticipantsList()}
-
-        {onGoHome && (
-          <button type="button" className="btn btn-secondary mt-3 mx-auto" onClick={onGoHome}>
-            <ArrowLeft size={16} />
-            <span>На головну</span>
-          </button>
-        )}
       </div>
     );
   }
@@ -510,13 +505,6 @@ export const JoinRoom: React.FC<JoinRoomProps> = ({ roomId, onGoHome }) => {
 
       {/* Available participants list (only Name and Surname, no wishes!) */}
       {renderParticipantsList()}
-
-      {onGoHome && (
-        <button type="button" className="btn btn-secondary mt-3 mx-auto" onClick={onGoHome}>
-          <ArrowLeft size={16} />
-          <span>На головну</span>
-        </button>
-      )}
     </div>
   );
 };
