@@ -179,9 +179,9 @@ public class RoomsController : ControllerBase
         return NoContent();
     }
 
-    // 2. Публічна інформація про кімнату (для сторінки приєднання)
+    // 2. Публічна інформація про кімнату (для сторінки приєднання / перегляду учасником)
     [HttpGet("{id:guid}")]
-    public async Task<ActionResult<RoomPublicDto>> GetPublic(Guid id)
+    public async Task<ActionResult<RoomPublicDto>> GetPublic(Guid id, [FromQuery] long? telegramId = null)
     {
         var room = await _db.Rooms
             .Include(r => r.Participants)
@@ -192,13 +192,35 @@ public class RoomsController : ControllerBase
             return NotFound("Кімнату не знайдено.");
         }
 
+        var participants = room.Participants
+            .OrderBy(p => p.CreatedAt)
+            .Select(p => new ParticipantPublicDto(p.Id, p.FirstName, p.LastName))
+            .ToList();
+
+        MyRegistrationDto? myRegistration = null;
+        if (telegramId.HasValue && telegramId.Value != 0)
+        {
+            var myPart = room.Participants.FirstOrDefault(p => p.TelegramId == telegramId.Value);
+            if (myPart != null)
+            {
+                myRegistration = new MyRegistrationDto(
+                    myPart.Id,
+                    myPart.FirstName,
+                    myPart.LastName,
+                    myPart.Wishlist
+                );
+            }
+        }
+
         return Ok(new RoomPublicDto(
             room.Id,
             room.Title,
             room.HostName,
             room.Status,
             room.Participants.Count,
-            room.CreatedAt
+            room.CreatedAt,
+            participants,
+            myRegistration
         ));
     }
 
@@ -266,10 +288,7 @@ public class RoomsController : ControllerBase
             existing.FirstName = request.FirstName.Trim();
             existing.LastName = request.LastName?.Trim() ?? string.Empty;
             existing.TelegramUsername = request.TelegramUsername?.TrimStart('@');
-            if (!string.IsNullOrWhiteSpace(request.Wishlist))
-            {
-                existing.Wishlist = request.Wishlist.Trim();
-            }
+            existing.Wishlist = string.IsNullOrWhiteSpace(request.Wishlist) ? null : request.Wishlist.Trim();
             await _db.SaveChangesAsync();
 
             return Ok(new ParticipantDto(
