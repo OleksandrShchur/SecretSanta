@@ -13,6 +13,7 @@ import type { RoomPublic } from '../types';
 import { getRoom, addParticipant } from '../api';
 import { getTelegramUser, triggerHaptic } from '../telegram';
 import { MyAssignmentCard } from './MyAssignmentCard';
+import { FloatingInput, FloatingTextarea } from './FloatingInput';
 
 interface JoinRoomProps {
   roomId: string;
@@ -31,6 +32,8 @@ export const JoinRoom: React.FC<JoinRoomProps> = ({ roomId, onGoHome }) => {
   const [lastName, setLastName] = useState(tgUser.last_name || '');
   const [wishlist, setWishlist] = useState('');
   const [joined, setJoined] = useState(false);
+  const [firstNameError, setFirstNameError] = useState<string | undefined>();
+  const [firstNameTouched, setFirstNameTouched] = useState(false);
 
   useEffect(() => {
     getRoom(roomId)
@@ -39,13 +42,40 @@ export const JoinRoom: React.FC<JoinRoomProps> = ({ roomId, onGoHome }) => {
       .finally(() => setLoading(false));
   }, [roomId]);
 
+  const validateFirstName = (val: string): string | undefined => {
+    if (!val.trim()) {
+      return "Вкажіть ваше ім'я";
+    }
+    if (val.trim().length > 50) {
+      return "Ім'я не може перевищувати 50 символів";
+    }
+    return undefined;
+  };
+
+  const handleFirstNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setFirstName(val);
+    if (firstNameTouched) {
+      setFirstNameError(validateFirstName(val));
+    }
+  };
+
+  const handleFirstNameBlur = () => {
+    setFirstNameTouched(true);
+    setFirstNameError(validateFirstName(firstName));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
 
-    if (!firstName.trim()) {
-      setErrorMsg("Будь ласка, введіть ваше ім'я.");
+    const err = validateFirstName(firstName);
+    setFirstNameTouched(true);
+    setFirstNameError(err);
+
+    if (err) {
       triggerHaptic('warning');
+      document.getElementById('join-first-name')?.focus();
       return;
     }
 
@@ -117,6 +147,25 @@ export const JoinRoom: React.FC<JoinRoomProps> = ({ roomId, onGoHome }) => {
     );
   }
 
+  // If closed/deactivated, show a message
+  if (room.status === 'closed') {
+    return (
+      <div className="card text-center">
+        <AlertCircle size={36} className="text-muted mx-auto" />
+        <h2>Кімнату деактивовано 🔒</h2>
+        <p className="card-desc">
+          Кімната «{room.title}» була деактивована організатором і більше не приймає учасників.
+        </p>
+        {onGoHome && (
+          <button type="button" className="btn btn-secondary mt-3 mx-auto" onClick={onGoHome}>
+            <ArrowLeft size={16} />
+            <span>На головну</span>
+          </button>
+        )}
+      </div>
+    );
+  }
+
   if (joined) {
     return (
       <div className="card success-card text-center">
@@ -169,54 +218,39 @@ export const JoinRoom: React.FC<JoinRoomProps> = ({ roomId, onGoHome }) => {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="room-form">
+      <form onSubmit={handleSubmit} className="room-form" noValidate>
         <div className="form-row">
-          <div className="form-group">
-            <label htmlFor="join-first-name">
-              <User size={16} />
-              <span>Ваше ім'я *</span>
-            </label>
-            <input
-              id="join-first-name"
-              type="text"
-              className="input-text"
-              placeholder="Іван"
-              value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
-              required
-            />
-          </div>
+          <FloatingInput
+            id="join-first-name"
+            label="Ваше ім'я"
+            placeholder="Іван"
+            icon={<User size={16} />}
+            value={firstName}
+            onChange={handleFirstNameChange}
+            onBlur={handleFirstNameBlur}
+            error={firstNameTouched ? firstNameError : undefined}
+            required
+          />
 
-          <div className="form-group">
-            <label htmlFor="join-last-name">
-              <User size={16} />
-              <span>Ваше прізвище</span>
-            </label>
-            <input
-              id="join-last-name"
-              type="text"
-              className="input-text"
-              placeholder="Коваленко"
-              value={lastName}
-              onChange={(e) => setLastName(e.target.value)}
-            />
-          </div>
-        </div>
-
-        <div className="form-group">
-          <label htmlFor="join-wishlist">
-            <Gift size={16} />
-            <span>Побажання до подарунка (опціонально)</span>
-          </label>
-          <textarea
-            id="join-wishlist"
-            className="input-textarea"
-            rows={3}
-            placeholder="Що ви любите, розмір одягу, хобі або що точно НЕ варто дарувати..."
-            value={wishlist}
-            onChange={(e) => setWishlist(e.target.value)}
+          <FloatingInput
+            id="join-last-name"
+            label="Ваше прізвище"
+            placeholder="Коваленко"
+            icon={<User size={16} />}
+            value={lastName}
+            onChange={(e) => setLastName(e.target.value)}
           />
         </div>
+
+        <FloatingTextarea
+          id="join-wishlist"
+          label="Побажання до подарунка (опціонально)"
+          placeholder="Що ви любите, розмір одягу, хобі або що точно НЕ варто дарувати..."
+          icon={<Gift size={16} />}
+          value={wishlist}
+          onChange={(e) => setWishlist(e.target.value)}
+          rows={3}
+        />
 
         <button type="submit" className="btn btn-primary btn-lg" disabled={submitting}>
           <Sparkles size={20} />

@@ -1,22 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import { getTelegramUser, setMockTelegramUser, isInsideTelegram } from '../telegram';
+import React, { useState, useEffect, useRef } from 'react';
+import { Settings, FolderOpen, ArrowLeft } from 'lucide-react';
+import { getTelegramUser, triggerHaptic } from '../telegram';
 import type { TelegramUser } from '../types';
 
 interface HeaderProps {
+  onBack?: () => void;
   onGoHome?: () => void;
+  onOpenMyRooms?: () => void;
 }
 
-const PRESET_MOCK_USERS: TelegramUser[] = [
-  { id: 100000001, first_name: 'Олександр', last_name: 'Щур', username: 'alex_shchur' },
-  { id: 100000002, first_name: 'Марія', last_name: 'Коваль', username: 'maria_k' },
-  { id: 100000003, first_name: 'Іван', last_name: 'Петренко', username: 'ivan_p' },
-  { id: 100000004, first_name: 'Олена', last_name: 'Мельник', username: 'olena_m' },
-];
-
-export const Header: React.FC<HeaderProps> = ({ onGoHome }) => {
+export const Header: React.FC<HeaderProps> = ({ onBack, onGoHome, onOpenMyRooms }) => {
   const [currentUser, setCurrentUser] = useState<TelegramUser>(getTelegramUser());
-  const [inTelegram] = useState(isInsideTelegram());
-  const [showUserSwitcher, setShowUserSwitcher] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleUserChange = () => {
@@ -26,15 +22,74 @@ export const Header: React.FC<HeaderProps> = ({ onGoHome }) => {
     return () => window.removeEventListener('tg_user_changed', handleUserChange);
   }, []);
 
-  const handleSelectMock = (user: TelegramUser) => {
-    setMockTelegramUser(user);
-    setShowUserSwitcher(false);
-  };
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setShowMenu(false);
+      }
+    };
+    if (showMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showMenu]);
 
   const displayName = [currentUser.first_name, currentUser.last_name].filter(Boolean).join(' ');
 
   return (
     <header className="christmas-header">
+      {/* Top Left Back Button */}
+      {onBack && (
+        <button
+          type="button"
+          className="btn-header-back"
+          onClick={() => {
+            triggerHaptic('light');
+            onBack();
+          }}
+          aria-label="Назад"
+          title="Назад"
+        >
+          <ArrowLeft size={18} />
+        </button>
+      )}
+
+      {/* Settings / Menu Gear Button */}
+      <div className="header-menu-container" ref={menuRef}>
+        <button
+          type="button"
+          className={`btn-header-gear ${showMenu ? 'active' : ''}`}
+          onClick={(e) => {
+            e.stopPropagation();
+            triggerHaptic('light');
+            setShowMenu(!showMenu);
+          }}
+          aria-label="Меню"
+          title="Меню"
+        >
+          <Settings size={18} />
+        </button>
+
+        {showMenu && (
+          <div className="header-menu-dropdown animate-fade-in">
+            <button
+              type="button"
+              className="header-menu-item"
+              onClick={() => {
+                triggerHaptic('light');
+                setShowMenu(false);
+                onOpenMyRooms?.();
+              }}
+            >
+              <FolderOpen size={16} className="text-forest" />
+              <span>Мої кімнати</span>
+            </button>
+          </div>
+        )}
+      </div>
+
       <div
         className={`header-main-content ${onGoHome ? 'is-clickable' : ''}`}
         onClick={onGoHome}
@@ -63,36 +118,6 @@ export const Header: React.FC<HeaderProps> = ({ onGoHome }) => {
             {displayName} {currentUser.username ? `(@${currentUser.username})` : `(ID: ${currentUser.id})`}
           </span>
         </div>
-
-        {!inTelegram && (
-          <div className="dev-mock-switcher">
-            <button
-              type="button"
-              className="btn-mock-toggle"
-              onClick={() => setShowUserSwitcher(!showUserSwitcher)}
-              title="Перемкнути тестового користувача для емуляції іншого учасника"
-            >
-              🛠️ Тест: змінити користувача
-            </button>
-
-            {showUserSwitcher && (
-              <div className="dev-mock-dropdown">
-                <span className="dropdown-title">Оберіть тестового користувача:</span>
-                {PRESET_MOCK_USERS.map((u) => (
-                  <button
-                    key={u.id}
-                    type="button"
-                    className={`mock-user-item ${u.id === currentUser.id ? 'active' : ''}`}
-                    onClick={() => handleSelectMock(u)}
-                  >
-                    <strong>{u.first_name} {u.last_name}</strong>
-                    <span>@{u.username}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
       </div>
     </header>
   );

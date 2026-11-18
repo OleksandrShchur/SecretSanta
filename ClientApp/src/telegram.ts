@@ -41,6 +41,13 @@ declare global {
           notificationOccurred: (type: 'error' | 'success' | 'warning') => void;
           selectionChanged: () => void;
         };
+        BackButton?: {
+          isVisible: boolean;
+          onClick: (callback: () => void) => void;
+          offClick: (callback: () => void) => void;
+          show: () => void;
+          hide: () => void;
+        };
       };
     };
   }
@@ -144,5 +151,26 @@ export function triggerHaptic(type: 'success' | 'warning' | 'error' | 'light'): 
     }
   } catch {
     // Haptics not supported on device
+  }
+}
+
+export function showTelegramBackButton(onClick: () => void): void {
+  const bb = window.Telegram?.WebApp?.BackButton;
+  if (!bb) return;
+  try {
+    bb.show();
+    bb.onClick(onClick);
+  } catch (e) {
+    console.warn('Failed to show Telegram BackButton:', e);
+  }
+}
+
+export function hideTelegramBackButton(): void {
+  const bb = window.Telegram?.WebApp?.BackButton;
+  if (!bb) return;
+  try {
+    bb.hide();
+  } catch (e) {
+    console.warn('Failed to hide Telegram BackButton:', e);
   }
 }

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Sparkles, User, Gift, AlertCircle, ArrowRight, Check, Send } from 'lucide-react';
 import { createRoom } from '../api';
 import { getTelegramUser, triggerHaptic } from '../telegram';
+import { FloatingInput, FloatingTextarea } from './FloatingInput';
 
 interface CreateRoomProps {
   onRoomCreated: (roomId: string, adminToken: string) => void;
@@ -18,13 +19,79 @@ export const CreateRoom: React.FC<CreateRoomProps> = ({ onRoomCreated }) => {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+  // Field validation state
+  const [errors, setErrors] = useState<{
+    title?: string;
+    hostFirstName?: string;
+  }>({});
+  const [touched, setTouched] = useState<{
+    title?: boolean;
+    hostFirstName?: boolean;
+  }>({});
+
+  const validateTitle = (val: string): string | undefined => {
+    if (!val.trim()) {
+      return "Вкажіть назву кімнати (напр., «Новорічний офіс»)";
+    }
+    if (val.trim().length > 100) {
+      return "Назва кімнати не може перевищувати 100 символів";
+    }
+    return undefined;
+  };
+
+  const validateFirstName = (val: string): string | undefined => {
+    if (!val.trim()) {
+      return "Вкажіть ваше ім'я";
+    }
+    if (val.trim().length > 50) {
+      return "Ім'я не може перевищувати 50 символів";
+    }
+    return undefined;
+  };
+
+  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setTitle(val);
+    if (touched.title) {
+      setErrors((prev) => ({ ...prev, title: validateTitle(val) }));
+    }
+  };
+
+  const handleTitleBlur = () => {
+    setTouched((prev) => ({ ...prev, title: true }));
+    setErrors((prev) => ({ ...prev, title: validateTitle(title) }));
+  };
+
+  const handleFirstNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setHostFirstName(val);
+    if (touched.hostFirstName) {
+      setErrors((prev) => ({ ...prev, hostFirstName: validateFirstName(val) }));
+    }
+  };
+
+  const handleFirstNameBlur = () => {
+    setTouched((prev) => ({ ...prev, hostFirstName: true }));
+    setErrors((prev) => ({ ...prev, hostFirstName: validateFirstName(hostFirstName) }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
 
-    if (!title.trim() || !hostFirstName.trim()) {
-      setErrorMsg("Будь ласка, заповніть назву кімнати та ваше ім'я.");
+    const titleErr = validateTitle(title);
+    const firstNameErr = validateFirstName(hostFirstName);
+
+    setTouched({ title: true, hostFirstName: true });
+    setErrors({ title: titleErr, hostFirstName: firstNameErr });
+
+    if (titleErr || firstNameErr) {
       triggerHaptic('warning');
+      if (titleErr) {
+        document.getElementById('room-title')?.focus();
+      } else if (firstNameErr) {
+        document.getElementById('host-first-name')?.focus();
+      }
       return;
     }
 
@@ -69,54 +136,40 @@ export const CreateRoom: React.FC<CreateRoomProps> = ({ onRoomCreated }) => {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="room-form">
-        <div className="form-group">
-          <label htmlFor="room-title">
-            <Sparkles size={16} />
-            <span>Назва кімнати або події *</span>
-          </label>
-          <input
-            id="room-title"
-            type="text"
-            className="input-text"
-            placeholder="напр., Новорічний офіс 2026 або Сім'я"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            required
-          />
-        </div>
+      <form onSubmit={handleSubmit} className="room-form" noValidate>
+        <FloatingInput
+          id="room-title"
+          label="Назва кімнати або події"
+          placeholder="напр., Новорічний офіс 2026 або Сім'я"
+          icon={<Sparkles size={16} />}
+          value={title}
+          onChange={handleTitleChange}
+          onBlur={handleTitleBlur}
+          error={touched.title ? errors.title : undefined}
+          required
+        />
 
         <div className="form-row">
-          <div className="form-group">
-            <label htmlFor="host-first-name">
-              <User size={16} />
-              <span>Ваше ім'я *</span>
-            </label>
-            <input
-              id="host-first-name"
-              type="text"
-              className="input-text"
-              placeholder="Ім'я"
-              value={hostFirstName}
-              onChange={(e) => setHostFirstName(e.target.value)}
-              required
-            />
-          </div>
+          <FloatingInput
+            id="host-first-name"
+            label="Ваше ім'я"
+            placeholder="Ім'я"
+            icon={<User size={16} />}
+            value={hostFirstName}
+            onChange={handleFirstNameChange}
+            onBlur={handleFirstNameBlur}
+            error={touched.hostFirstName ? errors.hostFirstName : undefined}
+            required
+          />
 
-          <div className="form-group">
-            <label htmlFor="host-last-name">
-              <User size={16} />
-              <span>Прізвище (опціонально)</span>
-            </label>
-            <input
-              id="host-last-name"
-              type="text"
-              className="input-text"
-              placeholder="Прізвище"
-              value={hostLastName}
-              onChange={(e) => setHostLastName(e.target.value)}
-            />
-          </div>
+          <FloatingInput
+            id="host-last-name"
+            label="Прізвище (опціонально)"
+            placeholder="Прізвище"
+            icon={<User size={16} />}
+            value={hostLastName}
+            onChange={(e) => setHostLastName(e.target.value)}
+          />
         </div>
 
         {/* Toggle host participating */}
@@ -147,18 +200,15 @@ export const CreateRoom: React.FC<CreateRoomProps> = ({ onRoomCreated }) => {
         </div>
 
         {hostParticipates && (
-          <div className="form-group animate-fade-in">
-            <label htmlFor="host-wishlist">
-              <Gift size={16} />
-              <span>Ваші побажання до подарунка (опціонально)</span>
-            </label>
-            <textarea
+          <div className="animate-fade-in">
+            <FloatingTextarea
               id="host-wishlist"
-              className="input-textarea"
-              rows={3}
+              label="Ваші побажання до подарунка (опціонально)"
               placeholder="Що ви любите, захоплення, розмір або що краще НЕ дарувати..."
+              icon={<Gift size={16} />}
               value={hostWishlist}
               onChange={(e) => setHostWishlist(e.target.value)}
+              rows={3}
             />
           </div>
         )}

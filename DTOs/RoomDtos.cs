@@ -76,6 +76,24 @@ public record ShuffleResponse(
     string? ErrorMessage = null
 );
 
+public record RoomSummaryDto(
+    Guid Id,
+    string Title,
+    string Status,
+    int ParticipantCount,
+    DateTime CreatedAt,
+    string AdminToken
+);
+
+public record RoomParticipationDto(
+    Guid Id,
+    string Title,
+    string HostName,
+    string Status,
+    int ParticipantCount,
+    DateTime CreatedAt
+);
+
 public record TelegramConfigDto(
     string BotUsername,
     bool Configured,
