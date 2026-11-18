@@ -21,7 +21,15 @@ interface JoinRoomProps {
 }
 
 export const JoinRoom: React.FC<JoinRoomProps> = ({ roomId, onGoHome }) => {
-  const tgUser = getTelegramUser();
+  const [tgUser, setTgUser] = useState(getTelegramUser);
+
+  useEffect(() => {
+    const handleUserChange = () => {
+      setTgUser(getTelegramUser());
+    };
+    window.addEventListener('tg_user_changed', handleUserChange);
+    return () => window.removeEventListener('tg_user_changed', handleUserChange);
+  }, []);
 
   const [room, setRoom] = useState<RoomPublic | null>(null);
   const [loading, setLoading] = useState(true);
@@ -129,9 +137,10 @@ export const JoinRoom: React.FC<JoinRoomProps> = ({ roomId, onGoHome }) => {
     return (
       <div className="space-y-4">
         <div className="card text-center">
-          <h2>Жеребкування проведено! 🎅</h2>
+          <span className="status-pill status-pill-shuffled mx-auto mb-2">Жеребкування проведено 🎉</span>
+          <h2>{room.title}</h2>
           <p className="card-desc">
-            У кімнаті «{room.title}» вже завершився розподіл подарунків.
+            Організатор: <strong>{room.hostName}</strong> • {room.participantCount} учасн.
           </p>
         </div>
 

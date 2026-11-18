@@ -55,7 +55,9 @@ public class TelegramController : ControllerBase
                 ? textProp.GetString() ?? string.Empty
                 : string.Empty;
 
-            string? webAppUrl = _configuration["Telegram:WebAppUrl"];
+            string? webAppUrl = _configuration["Telegram:WebAppUrl"]
+                ?? Environment.GetEnvironmentVariable("TELEGRAM_WEBAPP_URL")
+                ?? Environment.GetEnvironmentVariable("WEBAPP_URL");
 
             if (text.StartsWith("/start", StringComparison.OrdinalIgnoreCase))
             {
@@ -64,13 +66,14 @@ public class TelegramController : ControllerBase
                 string replyText;
                 object? replyMarkup = null;
 
-                string targetUrl = !string.IsNullOrWhiteSpace(webAppUrl) ? webAppUrl : string.Empty;
+                string targetUrl = !string.IsNullOrWhiteSpace(webAppUrl) ? webAppUrl.TrimEnd('/') : string.Empty;
                 if (!string.IsNullOrWhiteSpace(param) && !string.IsNullOrWhiteSpace(targetUrl))
                 {
                     string roomId = param.StartsWith("room_", StringComparison.OrdinalIgnoreCase)
                         ? param[5..]
                         : param;
-                    targetUrl = $"{targetUrl.TrimEnd('/')}?room={roomId}";
+                    string sep = targetUrl.Contains('?') ? "&" : "?";
+                    targetUrl = $"{targetUrl}{sep}room={roomId}";
                 }
 
                 if (!string.IsNullOrWhiteSpace(param))

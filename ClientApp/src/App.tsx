@@ -17,40 +17,56 @@ import {
 } from './telegram';
 import './App.css';
 
+function getInitialRouteState() {
+  if (typeof window === 'undefined') {
+    return {
+      activeTab: 'online' as const,
+      currentRoomId: null as string | null,
+      currentAdminToken: null as string | null,
+      showMyRooms: false,
+    };
+  }
+
+  const params = new URLSearchParams(window.location.search);
+  const startParam = getTelegramStartParam();
+  const admin = params.get('admin');
+  const view = params.get('view');
+  const tab = params.get('tab');
+  const rawRoom = params.get('room');
+  const room =
+    (rawRoom ? (rawRoom.startsWith('room_') ? rawRoom.replace('room_', '') : rawRoom) : null) ||
+    (!view && startParam ? startParam : null);
+
+  if (view === 'my-rooms') {
+    return { activeTab: 'online' as const, currentRoomId: null, currentAdminToken: null, showMyRooms: true };
+  }
+  if (room && admin) {
+    return { activeTab: 'online' as const, currentRoomId: room, currentAdminToken: admin, showMyRooms: false };
+  }
+  if (room) {
+    return { activeTab: 'online' as const, currentRoomId: room, currentAdminToken: null, showMyRooms: false };
+  }
+  return {
+    activeTab: (tab === 'offline' ? 'offline' : 'online') as 'offline' | 'online',
+    currentRoomId: null,
+    currentAdminToken: null,
+    showMyRooms: false,
+  };
+}
+
 export const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'offline' | 'online'>('online');
-  const [currentRoomId, setCurrentRoomId] = useState<string | null>(null);
-  const [currentAdminToken, setCurrentAdminToken] = useState<string | null>(null);
-  const [showMyRooms, setShowMyRooms] = useState(false);
+  const [initialRoute] = useState(getInitialRouteState);
+  const [activeTab, setActiveTab] = useState<'offline' | 'online'>(initialRoute.activeTab);
+  const [currentRoomId, setCurrentRoomId] = useState<string | null>(initialRoute.currentRoomId);
+  const [currentAdminToken, setCurrentAdminToken] = useState<string | null>(initialRoute.currentAdminToken);
+  const [showMyRooms, setShowMyRooms] = useState(initialRoute.showMyRooms);
 
   const syncStateFromUrl = useCallback(() => {
-    const params = new URLSearchParams(window.location.search);
-    const startParam = getTelegramStartParam();
-    const admin = params.get('admin');
-    const view = params.get('view');
-    const tab = params.get('tab');
-    const room = params.get('room') || (!view && startParam ? startParam : null);
-
-    if (view === 'my-rooms') {
-      setShowMyRooms(true);
-      setCurrentRoomId(null);
-      setCurrentAdminToken(null);
-    } else if (room && admin) {
-      setShowMyRooms(false);
-      setCurrentRoomId(room);
-      setCurrentAdminToken(admin);
-      setActiveTab('online');
-    } else if (room) {
-      setShowMyRooms(false);
-      setCurrentRoomId(room);
-      setCurrentAdminToken(null);
-      setActiveTab('online');
-    } else {
-      setShowMyRooms(false);
-      setCurrentRoomId(null);
-      setCurrentAdminToken(null);
-      setActiveTab(tab === 'offline' ? 'offline' : 'online');
-    }
+    const next = getInitialRouteState();
+    setActiveTab(next.activeTab);
+    setCurrentRoomId(next.currentRoomId);
+    setCurrentAdminToken(next.currentAdminToken);
+    setShowMyRooms(next.showMyRooms);
   }, []);
 
   useEffect(() => {

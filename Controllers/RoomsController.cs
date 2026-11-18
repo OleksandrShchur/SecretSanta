@@ -452,12 +452,25 @@ public class RoomsController : ControllerBase
         room.Status = "shuffled";
         await _db.SaveChangesAsync();
 
-        string? webAppUrl = _configuration["Telegram:WebAppUrl"];
+        string? webAppUrl = _configuration["Telegram:WebAppUrl"]
+            ?? Environment.GetEnvironmentVariable("TELEGRAM_WEBAPP_URL")
+            ?? Environment.GetEnvironmentVariable("WEBAPP_URL");
 
         int notificationsSent = 0;
         foreach (var (giver, receiver) in result.Pairs)
         {
-            bool ok = await _telegramService.SendAssignmentNotificationAsync(room.Title, giver, receiver, webAppUrl);
+            string? userWebAppUrl = null;
+            if (!string.IsNullOrWhiteSpace(webAppUrl))
+            {
+                string baseUrl = webAppUrl.TrimEnd('/');
+                string sep = baseUrl.Contains('?') ? "&" : "?";
+                bool isHost = giver.TelegramId == room.HostTelegramId;
+                userWebAppUrl = (isHost && !string.IsNullOrWhiteSpace(room.AdminToken))
+                    ? $"{baseUrl}{sep}room={room.Id}&admin={Uri.EscapeDataString(room.AdminToken)}"
+                    : $"{baseUrl}{sep}room={room.Id}";
+            }
+
+            bool ok = await _telegramService.SendAssignmentNotificationAsync(room.Title, giver, receiver, userWebAppUrl);
             if (ok)
             {
                 notificationsSent++;
