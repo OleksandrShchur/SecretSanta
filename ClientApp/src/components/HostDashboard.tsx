@@ -8,7 +8,6 @@ import {
   Sparkles,
   RefreshCw,
   Gift,
-  AlertCircle,
   CheckCircle2,
   Share2,
   MessageCircle,
@@ -85,18 +84,28 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({ roomId, adminToken
         setRoom(data);
         setErrorMsg(null);
       } catch (err: any) {
-        setErrorMsg(err.message || 'Не вдалося оновити дані кімнати');
+        const msg = err.message || 'Не вдалося оновити дані кімнати';
+        setErrorMsg(msg);
+        if (!room || msg.includes('Недійсний токен') || msg.includes('не знайдено')) {
+          onGoHome?.();
+        }
       } finally {
         setLoading(false);
         if (isManual) setIsRefreshing(false);
       }
     },
-    [roomId, adminToken]
+    [roomId, adminToken, onGoHome, room]
   );
 
   useEffect(() => {
     fetchRoomData();
   }, [fetchRoomData]);
+
+  useEffect(() => {
+    if (!loading && !room) {
+      onGoHome?.();
+    }
+  }, [loading, room, onGoHome]);
 
   // Polling every 4 seconds while collecting
   useEffect(() => {
@@ -241,20 +250,11 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({ roomId, adminToken
     }
   };
 
-  if (loading) {
+  if (loading || !room) {
     return (
       <div className="card loading-card">
         <RefreshCw size={32} className="spin text-gold" />
-        <p>Завантаження даних кімнати...</p>
-      </div>
-    );
-  }
-
-  if (!room) {
-    return (
-      <div className="card alert-error">
-        <AlertCircle size={24} />
-        <p>{errorMsg || 'Не вдалося завантажити інформацію про кімнату'}</p>
+        <p>{!room && !loading ? 'Перенаправлення на головну...' : 'Завантаження даних кімнати...'}</p>
       </div>
     );
   }

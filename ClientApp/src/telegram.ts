@@ -110,8 +110,15 @@ export function setMockTelegramUser(user: TelegramUser): void {
   window.dispatchEvent(new Event('tg_user_changed'));
 }
 
+let startParamCleared = false;
+
+export function clearTelegramStartParam(): void {
+  startParamCleared = true;
+}
+
 export function getTelegramStartParam(): string | null {
   if (typeof window === 'undefined') return null;
+  if (startParamCleared) return null;
 
   // 1. From Telegram WebApp initData
   const startParam = window.Telegram?.WebApp?.initDataUnsafe?.start_param;
