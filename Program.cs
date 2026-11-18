@@ -76,6 +76,10 @@ app.UseCors();
 app.UseStaticFiles();
 app.UseRouting();
 
+// Health check endpoints for uptime monitoring and liveness probes (supports GET and HEAD)
+app.MapMethods("/health", ["GET", "HEAD"], () => Results.Text("Healthy"));
+app.MapMethods("/api/health", ["GET", "HEAD"], () => Results.Text("Healthy"));
+
 app.MapControllers();
 
 // 4. Підтримка SPA: повертаємо index.html для всіх невідомих клієнтських маршрутів

@@ -100,3 +100,8 @@ dotnet run
    - Завантажте вміст папки `publish/` до кореневої папки вашого сайту на MonsterASP через FTP або File Manager.
    - Налаштуйте `WebAppUrl` у `appsettings.json` на вашу MonsterASP адресу (з `https://`).
    - Готово! Додаток працює як надійний Telegram Mini App.
+
+4. **Моніторинг та Health Check**:
+   - Ендпоінт: `/health` (або `/api/health`).
+   - Підтримує HTTP-методи **GET** та **HEAD**, повертає `200 OK` зі статусом `Healthy`.
+   - Ідеально для сервісів моніторингу аптайму (UptimeRobot, Better Stack тощо), щоб підтримувати роботу інстансу.
