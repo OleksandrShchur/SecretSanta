@@ -1,14 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Settings, FolderOpen } from 'lucide-react';
+import { Settings, FolderOpen, ArrowLeft } from 'lucide-react';
 import { getTelegramUser, triggerHaptic } from '../telegram';
 import type { TelegramUser } from '../types';
 
 interface HeaderProps {
+  onBack?: () => void;
   onGoHome?: () => void;
   onOpenMyRooms?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ onGoHome, onOpenMyRooms }) => {
+export const Header: React.FC<HeaderProps> = ({ onBack, onGoHome, onOpenMyRooms }) => {
   const [currentUser, setCurrentUser] = useState<TelegramUser>(getTelegramUser());
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -39,6 +40,22 @@ export const Header: React.FC<HeaderProps> = ({ onGoHome, onOpenMyRooms }) => {
 
   return (
     <header className="christmas-header">
+      {/* Top Left Back Button */}
+      {onBack && (
+        <button
+          type="button"
+          className="btn-header-back"
+          onClick={() => {
+            triggerHaptic('light');
+            onBack();
+          }}
+          aria-label="Назад"
+          title="Назад"
+        >
+          <ArrowLeft size={18} />
+        </button>
+      )}
+
       {/* Settings / Menu Gear Button */}
       <div className="header-menu-container" ref={menuRef}>
         <button

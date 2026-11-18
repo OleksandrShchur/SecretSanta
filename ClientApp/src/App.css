@@ -65,6 +65,7 @@
   justify-content: center;
   gap: 0.75rem;
   width: 100%;
+  padding: 0 2.25rem;
 }
 
 .header-main-content.is-clickable {
@@ -158,28 +159,29 @@
 .btn-nav-back {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  background: rgba(255, 255, 255, 0.85);
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.9);
   border: 1px solid var(--color-border);
   color: var(--color-text);
-  padding: 0.45rem 0.85rem;
+  width: 38px;
+  height: 38px;
+  padding: 0;
   border-radius: var(--radius-full);
-  font-size: 0.85rem;
-  font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
   box-shadow: var(--shadow-sm);
-  min-height: 38px;
+  flex-shrink: 0;
 }
 
 .btn-nav-back:hover {
   background: #ffffff;
   border-color: var(--color-heading-alt);
   color: var(--color-heading-alt);
+  transform: scale(1.05);
 }
 
 .btn-nav-back:active {
-  transform: scale(0.97);
+  transform: scale(0.95);
 }
 
 .room-nav-pill {
@@ -2021,8 +2023,38 @@
 
 
 /* --------------------------------------------------------------------------
-   Header Settings / Menu
+   Header Settings / Menu & Back Button
    -------------------------------------------------------------------------- */
+.btn-header-back {
+  position: absolute;
+  top: 0.65rem;
+  left: 0.75rem;
+  z-index: 30;
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-header-back:hover {
+  background: #ffffff;
+  color: var(--color-heading-alt);
+  border-color: #cbd5e1;
+  transform: scale(1.05);
+}
+
+.btn-header-back:active {
+  transform: scale(0.95);
+}
+
 .header-menu-container {
   position: absolute;
   top: 0.65rem;

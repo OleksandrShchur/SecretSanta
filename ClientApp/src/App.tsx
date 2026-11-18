@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Snowfall from 'react-snowfall';
-import { ArrowLeft } from 'lucide-react';
 import { Header } from './components/Header';
 import { Navbar } from './components/Navbar';
 import { OfflineGenerator } from './components/OfflineGenerator';
@@ -8,7 +7,13 @@ import { CreateRoom } from './components/CreateRoom';
 import { MyRooms } from './components/MyRooms';
 import { HostDashboard } from './components/HostDashboard';
 import { JoinRoom } from './components/JoinRoom';
-import { initTelegramApp, getTelegramStartParam, triggerHaptic } from './telegram';
+import {
+  initTelegramApp,
+  getTelegramStartParam,
+  triggerHaptic,
+  showTelegramBackButton,
+  hideTelegramBackButton,
+} from './telegram';
 import './App.css';
 
 export const App: React.FC = () => {
@@ -17,82 +22,111 @@ export const App: React.FC = () => {
   const [currentAdminToken, setCurrentAdminToken] = useState<string | null>(null);
   const [showMyRooms, setShowMyRooms] = useState(false);
 
-  useEffect(() => {
-    initTelegramApp();
-
-    const startParam = getTelegramStartParam();
+  const syncStateFromUrl = useCallback(() => {
     const params = new URLSearchParams(window.location.search);
+    const startParam = getTelegramStartParam();
     const admin = params.get('admin');
+    const view = params.get('view');
     const tab = params.get('tab');
+    const room = params.get('room') || (!view && startParam ? startParam : null);
 
-    if (startParam && admin) {
-      setCurrentRoomId(startParam);
+    if (view === 'my-rooms') {
+      setShowMyRooms(true);
+      setCurrentRoomId(null);
+      setCurrentAdminToken(null);
+    } else if (room && admin) {
+      setShowMyRooms(false);
+      setCurrentRoomId(room);
       setCurrentAdminToken(admin);
-      setShowMyRooms(false);
       setActiveTab('online');
-    } else if (startParam) {
-      setCurrentRoomId(startParam);
+    } else if (room) {
       setShowMyRooms(false);
+      setCurrentRoomId(room);
+      setCurrentAdminToken(null);
       setActiveTab('online');
-    } else if (tab === 'offline') {
-      setActiveTab('offline');
     } else {
-      setActiveTab('online');
+      setShowMyRooms(false);
+      setCurrentRoomId(null);
+      setCurrentAdminToken(null);
+      setActiveTab(tab === 'offline' ? 'offline' : 'online');
     }
   }, []);
 
+  useEffect(() => {
+    initTelegramApp();
+    syncStateFromUrl();
+
+    const handlePopState = () => {
+      syncStateFromUrl();
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      hideTelegramBackButton();
+    };
+  }, [syncStateFromUrl]);
+
+  const handleBack = useCallback(() => {
+    triggerHaptic('light');
+    if (window.history.length > 1) {
+      window.history.back();
+    } else {
+      handleGoHome();
+    }
+  }, []);
+
+  // Sync Telegram native back button
+  useEffect(() => {
+    if (currentRoomId || showMyRooms) {
+      showTelegramBackButton(handleBack);
+    } else {
+      hideTelegramBackButton();
+    }
+  }, [currentRoomId, showMyRooms, handleBack]);
+
   const handleTabChange = (tab: 'offline' | 'online') => {
-    setActiveTab(tab);
-    setCurrentRoomId(null);
-    setCurrentAdminToken(null);
-    setShowMyRooms(false);
     const url = new URL(window.location.href);
     url.search = tab === 'offline' ? '?tab=offline' : '';
     window.history.pushState({}, '', url.toString());
+    syncStateFromUrl();
   };
 
   const handleGoHome = () => {
     triggerHaptic('light');
-    setCurrentRoomId(null);
-    setCurrentAdminToken(null);
-    setShowMyRooms(false);
     const url = new URL(window.location.href);
     url.search = activeTab === 'offline' ? '?tab=offline' : '';
     window.history.pushState({}, '', url.toString());
+    syncStateFromUrl();
   };
 
   const handleRoomCreated = (roomId: string, adminToken: string) => {
-    setCurrentRoomId(roomId);
-    setCurrentAdminToken(adminToken);
-    setShowMyRooms(false);
     const url = new URL(window.location.href);
     url.search = `?room=${roomId}&admin=${adminToken}`;
     window.history.pushState({}, '', url.toString());
+    syncStateFromUrl();
   };
 
   const handleOpenRoomAsHost = (roomId: string, adminToken: string) => {
-    setCurrentRoomId(roomId);
-    setCurrentAdminToken(adminToken);
-    setShowMyRooms(false);
     const url = new URL(window.location.href);
     url.search = `?room=${roomId}&admin=${adminToken}`;
     window.history.pushState({}, '', url.toString());
+    syncStateFromUrl();
   };
 
   const handleOpenRoomAsParticipant = (roomId: string) => {
-    setCurrentRoomId(roomId);
-    setCurrentAdminToken(null);
-    setShowMyRooms(false);
     const url = new URL(window.location.href);
     url.search = `?room=${roomId}`;
     window.history.pushState({}, '', url.toString());
+    syncStateFromUrl();
   };
 
   const handleOpenMyRooms = () => {
     triggerHaptic('light');
-    setShowMyRooms(true);
-    setCurrentRoomId(null);
-    setCurrentAdminToken(null);
+    const url = new URL(window.location.href);
+    url.search = '?view=my-rooms';
+    window.history.pushState({}, '', url.toString());
+    syncStateFromUrl();
   };
 
   const renderContent = () => {
@@ -101,7 +135,7 @@ export const App: React.FC = () => {
         <MyRooms
           onOpenRoomAsHost={handleOpenRoomAsHost}
           onOpenRoomAsParticipant={handleOpenRoomAsParticipant}
-          onBack={handleGoHome}
+          onBack={handleBack}
         />
       );
     }
@@ -112,12 +146,12 @@ export const App: React.FC = () => {
           <HostDashboard
             roomId={currentRoomId}
             adminToken={currentAdminToken}
-            onGoHome={handleGoHome}
+            onGoHome={handleBack}
           />
         );
       }
       if (currentRoomId) {
-        return <JoinRoom roomId={currentRoomId} onGoHome={handleGoHome} />;
+        return <JoinRoom roomId={currentRoomId} onGoHome={handleBack} />;
       }
       return <CreateRoom onRoomCreated={handleRoomCreated} />;
     }
@@ -141,31 +175,13 @@ export const App: React.FC = () => {
       />
       <div className="app-container">
         <Header
-          onGoHome={currentRoomId || showMyRooms ? handleGoHome : undefined}
+          onBack={currentRoomId || showMyRooms ? handleBack : undefined}
+          onGoHome={handleGoHome}
           onOpenMyRooms={handleOpenMyRooms}
         />
         <main className="main-content">
-          {!currentRoomId && !showMyRooms ? (
+          {!currentRoomId && !showMyRooms && (
             <Navbar activeTab={activeTab} onTabChange={handleTabChange} />
-          ) : (
-            <div className="room-nav-bar">
-              <button
-                type="button"
-                className="btn-nav-back"
-                onClick={handleGoHome}
-                aria-label="Повернутися на головну"
-              >
-                <ArrowLeft size={16} />
-                <span>На головну</span>
-              </button>
-              <span className="room-nav-pill">
-                {showMyRooms
-                  ? '📁 Мої кімнати'
-                  : currentAdminToken
-                  ? '👑 Панель організатора'
-                  : '🎁 Кімната учасника'}
-              </span>
-            </div>
           )}
           {renderContent()}
         </main>
