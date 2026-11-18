@@ -239,8 +239,8 @@ export const JoinRoom: React.FC<JoinRoomProps> = ({ roomId, onGoHome }) => {
     return (
       <div className="card my-registration-card">
         <div className="my-reg-header">
-          <div className="flex items-center gap-2">
-            <CheckCircle2 size={20} className="text-forest flex-shrink-0" />
+          <div className="my-reg-title-wrap">
+            <CheckCircle2 size={22} className="text-forest flex-shrink-0" />
             <span className="my-reg-badge">Ви берете участь у цій кімнаті 🎉</span>
           </div>
 
