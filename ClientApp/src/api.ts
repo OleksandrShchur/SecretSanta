@@ -26,8 +26,11 @@ export async function createRoom(data: CreateRoomData): Promise<RoomAdmin> {
   return res.json();
 }
 
-export async function getRoom(id: string): Promise<RoomPublic> {
-  const res = await fetch(`${API_BASE}/${id}`);
+export async function getRoom(id: string, telegramId?: number): Promise<RoomPublic> {
+  const url = telegramId && telegramId !== 0
+    ? `${API_BASE}/${id}?telegramId=${telegramId}`
+    : `${API_BASE}/${id}`;
+  const res = await fetch(url);
   if (!res.ok) {
     const err = await res.text();
     throw new Error(err || 'Кімнату не знайдено');

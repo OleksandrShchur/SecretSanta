@@ -266,12 +266,15 @@ serve(async (req) => {
           };
 
           if (webAppUrl && webAppUrl.startsWith("https://")) {
+            const baseUrl = webAppUrl.replace(/\/+$/, "");
+            const sep = baseUrl.includes("?") ? "&" : "?";
+            const targetUrl = `${baseUrl}${sep}room=${roomId}`;
             payload.reply_markup = {
               inline_keyboard: [
                 [
                   {
                     text: "🎁 Відкрити кімнату в додатку",
-                    web_app: { url: webAppUrl },
+                    web_app: { url: targetUrl },
                   },
                 ],
               ],

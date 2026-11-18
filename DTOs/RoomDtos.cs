@@ -10,13 +10,28 @@ public record CreateRoomRequest(
     string? HostWishlist
 );
 
+public record ParticipantPublicDto(
+    Guid Id,
+    string FirstName,
+    string LastName
+);
+
+public record MyRegistrationDto(
+    Guid Id,
+    string FirstName,
+    string LastName,
+    string? Wishlist
+);
+
 public record RoomPublicDto(
     Guid Id,
     string Title,
     string HostName,
     string Status,
     int ParticipantCount,
-    DateTime CreatedAt
+    DateTime CreatedAt,
+    List<ParticipantPublicDto> Participants,
+    MyRegistrationDto? MyRegistration = null
 );
 
 public record ParticipantDto(

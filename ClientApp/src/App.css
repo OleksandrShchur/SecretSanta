@@ -1752,6 +1752,18 @@
   flex-shrink: 0;
 }
 
+.flex {
+  display: flex;
+}
+
+.items-center {
+  align-items: center;
+}
+
+.gap-2 {
+  gap: 0.5rem;
+}
+
 .animate-fade-in {
   animation: fadeIn 0.25s ease-out;
 }
@@ -2418,4 +2430,225 @@
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* --------------------------------------------------------------------------
+   Participant Room View (Read-Only & Participants)
+   -------------------------------------------------------------------------- */
+.participant-room-view {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  width: 100%;
+}
+
+.join-header-card h2 {
+  margin-top: 0.25rem;
+  margin-bottom: 0.35rem;
+}
+
+.join-form-header {
+  margin-bottom: 1.25rem;
+}
+
+.join-form-header h3 {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--color-text-main);
+  margin-bottom: 0.25rem;
+}
+
+.my-registration-card {
+  background: #ffffff;
+  border: 1px solid #d1fae5;
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.reg-card-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.reg-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #065f46;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  padding: 0.35rem 0.75rem;
+  border-radius: 9999px;
+}
+
+.btn-edit-profile {
+  font-size: 0.82rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.reg-user-profile-row {
+  display: flex;
+  align-items: center;
+  gap: 0.95rem;
+  padding: 0.25rem 0;
+}
+
+.reg-user-avatar {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #059669, #10b981);
+  color: #ffffff;
+  font-size: 1.25rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25);
+}
+
+.reg-user-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.reg-user-fullname {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.25;
+  overflow-wrap: break-word;
+}
+
+.reg-user-handle {
+  font-size: 0.88rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.reg-wishlist-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.reg-section-header {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.reg-section-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #047857;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.reg-wishlist-content-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-left: 4px solid #10b981;
+  border-radius: var(--radius-md);
+  padding: 0.85rem 1.05rem;
+}
+
+.reg-wishlist-text {
+  font-size: 0.98rem;
+  font-weight: 500;
+  color: #1e293b;
+  line-height: 1.55;
+  white-space: pre-line;
+  margin: 0;
+}
+
+.reg-wishlist-empty-box {
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: var(--radius-md);
+  padding: 0.85rem 1.05rem;
+}
+
+.reg-wishlist-empty-text {
+  font-size: 0.88rem;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.45;
+}
+
+.reg-info-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: var(--radius-md);
+  padding: 0.75rem 0.95rem;
+}
+
+.reg-info-hint p {
+  font-size: 0.85rem;
+  color: #166534;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.edit-profile-card {
+  border: 2px solid var(--color-forest);
+}
+
+.edit-form-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+}
+
+.participants-section-card {
+  margin-top: 0.25rem;
+}
+
+.participant-name-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.chip-is-me {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #86efac;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.15rem 0.55rem;
+  border-radius: 9999px;
+  line-height: 1.2;
+}
+
+.participant-card-item.is-me {
+  background: #f0fdf4;
+  border-color: #86efac;
 }

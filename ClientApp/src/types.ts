@@ -15,6 +15,19 @@ export interface Restriction {
   receiverId: string;
 }
 
+export interface ParticipantPublic {
+  id: string;
+  firstName: string;
+  lastName: string;
+}
+
+export interface MyRegistration {
+  id: string;
+  firstName: string;
+  lastName: string;
+  wishlist?: string | null;
+}
+
 export interface RoomPublic {
   id: string;
   title: string;
@@ -22,6 +35,8 @@ export interface RoomPublic {
   status: 'collecting' | 'shuffled' | 'closed';
   participantCount: number;
   createdAt: string;
+  participants: ParticipantPublic[];
+  myRegistration?: MyRegistration | null;
 }
 
 export interface RoomSummary {

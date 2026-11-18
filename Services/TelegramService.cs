@@ -56,8 +56,18 @@ public class TelegramService : ITelegramService
 {wishlistSection}
 🤫 <i>Пам'ятай: це секрет! Не видавай себе завчасно. Веселих свят! ✨</i>";
 
+        string? finalUrl = webAppUrl;
+        if (!string.IsNullOrWhiteSpace(finalUrl))
+        {
+            if (!finalUrl.Contains("room=", StringComparison.OrdinalIgnoreCase))
+            {
+                string sep = finalUrl.Contains('?') ? "&" : "?";
+                finalUrl = $"{finalUrl.TrimEnd('/')}{sep}room={giver.RoomId}";
+            }
+        }
+
         object? replyMarkup = null;
-        if (!string.IsNullOrWhiteSpace(webAppUrl) && webAppUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+        if (!string.IsNullOrWhiteSpace(finalUrl) && finalUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
         {
             replyMarkup = new
             {
@@ -68,7 +78,7 @@ public class TelegramService : ITelegramService
                         new
                         {
                             text = "🎁 Відкрити кімнату в додатку",
-                            web_app = new { url = webAppUrl }
+                            web_app = new { url = finalUrl }
                         }
                     }
                 }

@@ -179,9 +179,9 @@ public class RoomsController : ControllerBase
         return NoContent();
     }
 
-    // 2. Публічна інформація про кімнату (для сторінки приєднання)
+    // 2. Публічна інформація про кімнату (для сторінки приєднання / перегляду учасником)
     [HttpGet("{id:guid}")]
-    public async Task<ActionResult<RoomPublicDto>> GetPublic(Guid id)
+    public async Task<ActionResult<RoomPublicDto>> GetPublic(Guid id, [FromQuery] long? telegramId = null)
     {
         var room = await _db.Rooms
             .Include(r => r.Participants)
@@ -192,13 +192,35 @@ public class RoomsController : ControllerBase
             return NotFound("Кімнату не знайдено.");
         }
 
+        var participants = room.Participants
+            .OrderBy(p => p.CreatedAt)
+            .Select(p => new ParticipantPublicDto(p.Id, p.FirstName, p.LastName))
+            .ToList();
+
+        MyRegistrationDto? myRegistration = null;
+        if (telegramId.HasValue && telegramId.Value != 0)
+        {
+            var myPart = room.Participants.FirstOrDefault(p => p.TelegramId == telegramId.Value);
+            if (myPart != null)
+            {
+                myRegistration = new MyRegistrationDto(
+                    myPart.Id,
+                    myPart.FirstName,
+                    myPart.LastName,
+                    myPart.Wishlist
+                );
+            }
+        }
+
         return Ok(new RoomPublicDto(
             room.Id,
             room.Title,
             room.HostName,
             room.Status,
             room.Participants.Count,
-            room.CreatedAt
+            room.CreatedAt,
+            participants,
+            myRegistration
         ));
     }
 
@@ -266,10 +288,7 @@ public class RoomsController : ControllerBase
             existing.FirstName = request.FirstName.Trim();
             existing.LastName = request.LastName?.Trim() ?? string.Empty;
             existing.TelegramUsername = request.TelegramUsername?.TrimStart('@');
-            if (!string.IsNullOrWhiteSpace(request.Wishlist))
-            {
-                existing.Wishlist = request.Wishlist.Trim();
-            }
+            existing.Wishlist = string.IsNullOrWhiteSpace(request.Wishlist) ? null : request.Wishlist.Trim();
             await _db.SaveChangesAsync();
 
             return Ok(new ParticipantDto(
@@ -452,12 +471,25 @@ public class RoomsController : ControllerBase
         room.Status = "shuffled";
         await _db.SaveChangesAsync();
 
-        string? webAppUrl = _configuration["Telegram:WebAppUrl"];
+        string? webAppUrl = _configuration["Telegram:WebAppUrl"]
+            ?? Environment.GetEnvironmentVariable("TELEGRAM_WEBAPP_URL")
+            ?? Environment.GetEnvironmentVariable("WEBAPP_URL");
 
         int notificationsSent = 0;
         foreach (var (giver, receiver) in result.Pairs)
         {
-            bool ok = await _telegramService.SendAssignmentNotificationAsync(room.Title, giver, receiver, webAppUrl);
+            string? userWebAppUrl = null;
+            if (!string.IsNullOrWhiteSpace(webAppUrl))
+            {
+                string baseUrl = webAppUrl.TrimEnd('/');
+                string sep = baseUrl.Contains('?') ? "&" : "?";
+                bool isHost = giver.TelegramId == room.HostTelegramId;
+                userWebAppUrl = (isHost && !string.IsNullOrWhiteSpace(room.AdminToken))
+                    ? $"{baseUrl}{sep}room={room.Id}&admin={Uri.EscapeDataString(room.AdminToken)}"
+                    : $"{baseUrl}{sep}room={room.Id}";
+            }
+
+            bool ok = await _telegramService.SendAssignmentNotificationAsync(room.Title, giver, receiver, userWebAppUrl);
             if (ok)
             {
                 notificationsSent++;

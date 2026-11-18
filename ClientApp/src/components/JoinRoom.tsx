@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   User,
   Gift,
@@ -8,6 +8,10 @@ import {
   ArrowLeft,
   Sparkles,
   RefreshCw,
+  Users,
+  Pencil,
+  X,
+  Check,
 } from 'lucide-react';
 import type { RoomPublic } from '../types';
 import { getRoom, addParticipant } from '../api';
@@ -21,26 +25,69 @@ interface JoinRoomProps {
 }
 
 export const JoinRoom: React.FC<JoinRoomProps> = ({ roomId, onGoHome }) => {
-  const tgUser = getTelegramUser();
+  const [tgUser, setTgUser] = useState(getTelegramUser);
+
+  useEffect(() => {
+    const handleUserChange = () => {
+      setTgUser(getTelegramUser());
+    };
+    window.addEventListener('tg_user_changed', handleUserChange);
+    return () => window.removeEventListener('tg_user_changed', handleUserChange);
+  }, []);
 
   const [room, setRoom] = useState<RoomPublic | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
 
-  const [firstName, setFirstName] = useState(tgUser.first_name || '');
-  const [lastName, setLastName] = useState(tgUser.last_name || '');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [wishlist, setWishlist] = useState('');
-  const [joined, setJoined] = useState(false);
   const [firstNameError, setFirstNameError] = useState<string | undefined>();
   const [firstNameTouched, setFirstNameTouched] = useState(false);
 
+  const fetchRoom = useCallback(
+    async (isManual = false) => {
+      if (isManual) setIsRefreshing(true);
+      try {
+        const data = await getRoom(roomId, tgUser.id);
+        setRoom(data);
+        setErrorMsg(null);
+        if (data.myRegistration) {
+          setFirstName(data.myRegistration.firstName || '');
+          setLastName(data.myRegistration.lastName || '');
+          setWishlist(data.myRegistration.wishlist || '');
+        } else {
+          setFirstName(tgUser.first_name || '');
+          setLastName(tgUser.last_name || '');
+          setWishlist('');
+        }
+      } catch (err: any) {
+        setErrorMsg(err.message || 'Кімнату не знайдено');
+      } finally {
+        setLoading(false);
+        if (isManual) setIsRefreshing(false);
+      }
+    },
+    [roomId, tgUser.id, tgUser.first_name, tgUser.last_name]
+  );
+
   useEffect(() => {
-    getRoom(roomId)
-      .then((data) => setRoom(data))
-      .catch((err) => setErrorMsg(err.message || 'Кімнату не знайдено'))
-      .finally(() => setLoading(false));
-  }, [roomId]);
+    fetchRoom();
+  }, [fetchRoom]);
+
+  // Polling every 5 seconds while collecting
+  useEffect(() => {
+    if (!room || room.status !== 'collecting') return;
+
+    const interval = setInterval(() => {
+      fetchRoom(false);
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [room?.status, fetchRoom]);
 
   const validateFirstName = (val: string): string | undefined => {
     if (!val.trim()) {
@@ -63,6 +110,18 @@ export const JoinRoom: React.FC<JoinRoomProps> = ({ roomId, onGoHome }) => {
   const handleFirstNameBlur = () => {
     setFirstNameTouched(true);
     setFirstNameError(validateFirstName(firstName));
+  };
+
+  const handleCancelEdit = () => {
+    triggerHaptic('light');
+    if (room?.myRegistration) {
+      setFirstName(room.myRegistration.firstName || '');
+      setLastName(room.myRegistration.lastName || '');
+      setWishlist(room.myRegistration.wishlist || '');
+    }
+    setFirstNameError(undefined);
+    setFirstNameTouched(false);
+    setIsEditing(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -89,10 +148,11 @@ export const JoinRoom: React.FC<JoinRoomProps> = ({ roomId, onGoHome }) => {
         wishlist: wishlist.trim() || undefined,
       });
       triggerHaptic('success');
-      setJoined(true);
+      setIsEditing(false);
+      await fetchRoom(true);
     } catch (err: any) {
       triggerHaptic('error');
-      setErrorMsg(err.message || 'Помилка реєстрації');
+      setErrorMsg(err.message || 'Помилка збереження даних');
     } finally {
       setSubmitting(false);
     }
@@ -124,87 +184,189 @@ export const JoinRoom: React.FC<JoinRoomProps> = ({ roomId, onGoHome }) => {
     );
   }
 
-  // If already shuffled, show the assignment reveal card
-  if (room.status === 'shuffled') {
+  const isParticipant = Boolean(room.myRegistration);
+
+  // Helper to render participants list (with NO wishes, only name and surname)
+  const renderParticipantsList = () => {
     return (
-      <div className="space-y-4">
-        <div className="card text-center">
-          <h2>Жеребкування проведено! 🎅</h2>
-          <p className="card-desc">
-            У кімнаті «{room.title}» вже завершився розподіл подарунків.
-          </p>
+      <div className="card participants-section-card">
+        <div className="card-header">
+          <Users size={22} className="text-forest flex-shrink-0" />
+          <div>
+            <h3>Учасники кімнати ({room.participants.length})</h3>
+            <p className="card-desc">
+              {room.status === 'collecting'
+                ? 'Список зареєстрованих учасників (побажання залишаються в секреті 🤫)'
+                : 'Список зареєстрованих учасників гри'}
+            </p>
+          </div>
         </div>
 
-        <MyAssignmentCard roomId={roomId} telegramId={tgUser.id} />
-
-        {onGoHome && (
-          <button type="button" className="btn btn-secondary mt-3 mx-auto" onClick={onGoHome}>
-            <ArrowLeft size={16} />
-            <span>На головну</span>
-          </button>
-        )}
-      </div>
-    );
-  }
-
-  // If closed/deactivated, show a message
-  if (room.status === 'closed') {
-    return (
-      <div className="card text-center">
-        <AlertCircle size={36} className="text-muted mx-auto" />
-        <h2>Кімнату деактивовано 🔒</h2>
-        <p className="card-desc">
-          Кімната «{room.title}» була деактивована організатором і більше не приймає учасників.
-        </p>
-        {onGoHome && (
-          <button type="button" className="btn btn-secondary mt-3 mx-auto" onClick={onGoHome}>
-            <ArrowLeft size={16} />
-            <span>На головну</span>
-          </button>
-        )}
-      </div>
-    );
-  }
-
-  if (joined) {
-    return (
-      <div className="card success-card text-center">
-        <CheckCircle2 size={52} className="text-forest mx-auto" />
-        <h2>Чудово, {firstName}! 🎉</h2>
-        <p className="success-subtitle">Ви успішно приєдналися до кімнати «{room.title}».</p>
-
-        <div className="tg-user-banner my-3 justify-center">
-          <div className="tg-user-avatar">
-            {firstName.charAt(0).toUpperCase()}
+        {room.participants.length === 0 ? (
+          <p className="empty-state">Поки що немає зареєстрованих учасників.</p>
+        ) : (
+          <div className="participants-grid">
+            {room.participants.map((p, idx) => {
+              const isMe = p.id === room.myRegistration?.id;
+              return (
+                <div key={p.id} className={`participant-card-item ${isMe ? 'is-me' : ''}`}>
+                  <div className="participant-card-top">
+                    <div className="participant-main">
+                      <div className="participant-num">{idx + 1}</div>
+                      <div className="participant-details">
+                        <div className="participant-name-row">
+                          <strong className="participant-name">
+                            {p.firstName} {p.lastName}
+                          </strong>
+                          {isMe && <span className="chip-is-me">Ви 🎅</span>}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
-          <div className="tg-user-info text-left">
-            <span className="tg-user-label">Зареєстрований Telegram:</span>
-            <span className="tg-user-name">
-              {firstName} {lastName} {tgUser.username ? `(@${tgUser.username})` : `(ID: ${tgUser.id})`}
+        )}
+      </div>
+    );
+  };
+
+  // Helper to render user's own profile (read-only view)
+  const renderMyReadOnlyProfile = () => {
+    if (!room.myRegistration) return null;
+
+    return (
+      <div className="card my-registration-card">
+        {/* Top bar with Status Badge + Edit button */}
+        <div className="reg-card-topbar">
+          <div className="reg-status-badge">
+            <CheckCircle2 size={16} className="text-forest flex-shrink-0" />
+            <span>Ви берете участь у грі 🎉</span>
+          </div>
+
+          {room.status === 'collecting' && !isEditing && (
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm btn-edit-profile"
+              onClick={() => {
+                triggerHaptic('light');
+                setIsEditing(true);
+              }}
+            >
+              <Pencil size={13} />
+              <span>Змінити дані</span>
+            </button>
+          )}
+        </div>
+
+        {/* User Identity Row: Avatar, Name, Handle */}
+        <div className="reg-user-profile-row">
+          <div className="reg-user-avatar">
+            {(room.myRegistration.firstName || 'U').charAt(0).toUpperCase()}
+          </div>
+          <div className="reg-user-details">
+            <strong className="reg-user-fullname">
+              {room.myRegistration.firstName} {room.myRegistration.lastName}
+            </strong>
+            <span className="reg-user-handle">
+              {tgUser.username ? `@${tgUser.username.replace(/^@/, '')}` : `ID: ${tgUser.id}`}
             </span>
           </div>
         </div>
 
-        <div className="success-box">
-          <p className="success-hint">
-            Щойно організатор (<strong>{room.hostName}</strong>) запустить жеребкування, бот надішле вам особисте повідомлення в Telegram з інформацією про вашого підопічного! 🎅✨
+        {/* Wishlist Box - High Contrast, Clean Typography */}
+        <div className="reg-wishlist-section">
+          <div className="reg-section-header">
+            <Gift size={16} className="text-forest flex-shrink-0" />
+            <span className="reg-section-title">Ваші побажання до подарунка</span>
+          </div>
+          {room.myRegistration.wishlist ? (
+            <div className="reg-wishlist-content-box">
+              <p className="reg-wishlist-text">
+                «{room.myRegistration.wishlist}»
+              </p>
+            </div>
+          ) : (
+            <div className="reg-wishlist-empty-box">
+              <p className="reg-wishlist-empty-text">
+                Побажань не вказано — Санта обере подарунок на власний розсуд 🎄
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Status Notice */}
+        {room.status === 'collecting' && (
+          <div className="reg-info-hint">
+            <Sparkles size={16} className="text-forest flex-shrink-0 mt-0.5" />
+            <p>
+              Щойно організатор (<strong>{room.hostName}</strong>) запустить жеребкування, бот надішле вам особисте повідомлення в Telegram з інформацією про вашого підопічного! 🎅✨
+            </p>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // 1. Shuffled view
+  if (room.status === 'shuffled') {
+    return (
+      <div className="participant-room-view">
+        <div className="card text-center">
+          <span className="status-pill status-pill-shuffled mx-auto mb-2">Жеребкування проведено 🎉</span>
+          <h2>{room.title}</h2>
+          <p className="card-desc">
+            Організатор: <strong>{room.hostName}</strong> • {room.participantCount} учасн.
           </p>
         </div>
 
-        {onGoHome && (
-          <button type="button" className="btn btn-secondary mt-3 mx-auto" onClick={onGoHome}>
-            <ArrowLeft size={16} />
-            <span>Повернутися на головну</span>
-          </button>
-        )}
+        {isParticipant && <MyAssignmentCard roomId={roomId} telegramId={tgUser.id} />}
+
+        {isParticipant && renderMyReadOnlyProfile()}
+
+        {renderParticipantsList()}
       </div>
     );
   }
 
+  // 2. Closed view
+  if (room.status === 'closed') {
+    return (
+      <div className="participant-room-view">
+        <div className="card text-center">
+          <AlertCircle size={36} className="text-muted mx-auto" />
+          <h2>Кімнату деактивовано 🔒</h2>
+          <p className="card-desc">
+            Кімната «{room.title}» була деактивована організатором і більше не приймає учасників.
+          </p>
+        </div>
+
+        {isParticipant && renderMyReadOnlyProfile()}
+
+        {renderParticipantsList()}
+      </div>
+    );
+  }
+
+  // 3. Collecting view
   return (
-    <div className="card join-card">
-      <div className="join-header">
-        <span className="badge-label">Запрошення до кімнати</span>
+    <div className="participant-room-view">
+      {/* Room Header Card */}
+      <div className="card join-header-card">
+        <div className="card-header-row mb-2">
+          <span className="status-pill status-pill-collecting">Реєстрація відкрита 🎅</span>
+          <button
+            type="button"
+            className="btn btn-ghost btn-sm"
+            onClick={() => fetchRoom(true)}
+            disabled={isRefreshing}
+            title="Оновити дані"
+          >
+            <RefreshCw size={14} className={isRefreshing ? 'spin text-gold' : ''} />
+            <span>{isRefreshing ? 'Оновлення...' : 'Оновити'}</span>
+          </button>
+        </div>
         <h2>{room.title}</h2>
         <p className="card-desc">
           Організатор: <strong>{room.hostName}</strong> (зареєстровано {room.participantCount} учасн.)
@@ -218,46 +380,131 @@ export const JoinRoom: React.FC<JoinRoomProps> = ({ roomId, onGoHome }) => {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="room-form" noValidate>
-        <div className="form-row">
-          <FloatingInput
-            id="join-first-name"
-            label="Ваше ім'я"
-            placeholder="Іван"
-            icon={<User size={16} />}
-            value={firstName}
-            onChange={handleFirstNameChange}
-            onBlur={handleFirstNameBlur}
-            error={firstNameTouched ? firstNameError : undefined}
-            required
-          />
+      {/* Case A: User has ALREADY joined */}
+      {isParticipant && (
+        <>
+          {/* Sub-case A1: READ-ONLY MODE (Default!) */}
+          {!isEditing && renderMyReadOnlyProfile()}
 
-          <FloatingInput
-            id="join-last-name"
-            label="Ваше прізвище"
-            placeholder="Коваленко"
-            icon={<User size={16} />}
-            value={lastName}
-            onChange={(e) => setLastName(e.target.value)}
-          />
+          {/* Sub-case A2: EDITING MODE (Only if user clicked "Змінити дані") */}
+          {isEditing && (
+            <div className="card edit-profile-card">
+              <div className="card-header">
+                <Pencil size={20} className="text-forest flex-shrink-0" />
+                <div>
+                  <h3>Зміна ваших даних</h3>
+                  <p className="card-desc">Оновіть ім'я чи побажання до подарунка</p>
+                </div>
+              </div>
+
+              <form onSubmit={handleSubmit} className="room-form" noValidate>
+                <div className="form-row">
+                  <FloatingInput
+                    id="join-first-name"
+                    label="Ваше ім'я"
+                    placeholder="Іван"
+                    icon={<User size={16} />}
+                    value={firstName}
+                    onChange={handleFirstNameChange}
+                    onBlur={handleFirstNameBlur}
+                    error={firstNameTouched ? firstNameError : undefined}
+                    required
+                  />
+
+                  <FloatingInput
+                    id="join-last-name"
+                    label="Ваше прізвище"
+                    placeholder="Коваленко"
+                    icon={<User size={16} />}
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                  />
+                </div>
+
+                <FloatingTextarea
+                  id="join-wishlist"
+                  label="Побажання до подарунка (опціонально)"
+                  placeholder="Що ви любите, розмір одягу, хобі або що точно НЕ варто дарувати..."
+                  icon={<Gift size={16} />}
+                  value={wishlist}
+                  onChange={(e) => setWishlist(e.target.value)}
+                  rows={3}
+                />
+
+                <div className="edit-form-actions">
+                  <button type="submit" className="btn btn-primary" disabled={submitting}>
+                    <Check size={18} />
+                    <span>{submitting ? 'Зберігаємо...' : 'Зберегти зміни'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={handleCancelEdit}
+                    disabled={submitting}
+                  >
+                    <X size={18} />
+                    <span>Скасувати</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Case B: User has NOT joined yet */}
+      {!isParticipant && (
+        <div className="card join-card">
+          <div className="join-form-header">
+            <h3>Взяти участь у грі</h3>
+            <p className="card-desc">Заповніть форму, щоб приєднатися до розіграшу</p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="room-form" noValidate>
+            <div className="form-row">
+              <FloatingInput
+                id="join-first-name"
+                label="Ваше ім'я"
+                placeholder="Іван"
+                icon={<User size={16} />}
+                value={firstName}
+                onChange={handleFirstNameChange}
+                onBlur={handleFirstNameBlur}
+                error={firstNameTouched ? firstNameError : undefined}
+                required
+              />
+
+              <FloatingInput
+                id="join-last-name"
+                label="Ваше прізвище"
+                placeholder="Коваленко"
+                icon={<User size={16} />}
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+              />
+            </div>
+
+            <FloatingTextarea
+              id="join-wishlist"
+              label="Побажання до подарунка (опціонально)"
+              placeholder="Що ви любите, розмір одягу, хобі або що точно НЕ варто дарувати..."
+              icon={<Gift size={16} />}
+              value={wishlist}
+              onChange={(e) => setWishlist(e.target.value)}
+              rows={3}
+            />
+
+            <button type="submit" className="btn btn-primary btn-lg" disabled={submitting}>
+              <Sparkles size={20} />
+              <span>{submitting ? 'Зберігаємо...' : 'Взяти участь у Таємному Санті 🎁'}</span>
+              <ArrowRight size={20} />
+            </button>
+          </form>
         </div>
+      )}
 
-        <FloatingTextarea
-          id="join-wishlist"
-          label="Побажання до подарунка (опціонально)"
-          placeholder="Що ви любите, розмір одягу, хобі або що точно НЕ варто дарувати..."
-          icon={<Gift size={16} />}
-          value={wishlist}
-          onChange={(e) => setWishlist(e.target.value)}
-          rows={3}
-        />
-
-        <button type="submit" className="btn btn-primary btn-lg" disabled={submitting}>
-          <Sparkles size={20} />
-          <span>{submitting ? 'Зберігаємо...' : 'Взяти участь у Таємному Санті 🎁'}</span>
-          <ArrowRight size={20} />
-        </button>
-      </form>
+      {/* Available participants list (only Name and Surname, no wishes!) */}
+      {renderParticipantsList()}
     </div>
   );
 };
