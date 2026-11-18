@@ -10,6 +10,7 @@ import { JoinRoom } from './components/JoinRoom';
 import {
   initTelegramApp,
   getTelegramStartParam,
+  clearTelegramStartParam,
   triggerHaptic,
   showTelegramBackButton,
   hideTelegramBackButton,
@@ -67,14 +68,27 @@ export const App: React.FC = () => {
     };
   }, [syncStateFromUrl]);
 
+  const handleGoHome = useCallback((replace = false) => {
+    triggerHaptic('light');
+    clearTelegramStartParam();
+    const url = new URL(window.location.href);
+    url.search = activeTab === 'offline' ? '?tab=offline' : '';
+    if (replace) {
+      window.history.replaceState({}, '', url.toString());
+    } else {
+      window.history.pushState({}, '', url.toString());
+    }
+    syncStateFromUrl();
+  }, [activeTab, syncStateFromUrl]);
+
   const handleBack = useCallback(() => {
     triggerHaptic('light');
     if (window.history.length > 1) {
       window.history.back();
     } else {
-      handleGoHome();
+      handleGoHome(false);
     }
-  }, []);
+  }, [handleGoHome]);
 
   // Sync Telegram native back button
   useEffect(() => {
@@ -88,14 +102,6 @@ export const App: React.FC = () => {
   const handleTabChange = (tab: 'offline' | 'online') => {
     const url = new URL(window.location.href);
     url.search = tab === 'offline' ? '?tab=offline' : '';
-    window.history.pushState({}, '', url.toString());
-    syncStateFromUrl();
-  };
-
-  const handleGoHome = () => {
-    triggerHaptic('light');
-    const url = new URL(window.location.href);
-    url.search = activeTab === 'offline' ? '?tab=offline' : '';
     window.history.pushState({}, '', url.toString());
     syncStateFromUrl();
   };
@@ -146,12 +152,12 @@ export const App: React.FC = () => {
           <HostDashboard
             roomId={currentRoomId}
             adminToken={currentAdminToken}
-            onGoHome={handleBack}
+            onGoHome={() => handleGoHome(true)}
           />
         );
       }
       if (currentRoomId) {
-        return <JoinRoom roomId={currentRoomId} onGoHome={handleBack} />;
+        return <JoinRoom roomId={currentRoomId} onGoHome={() => handleGoHome(false)} />;
       }
       return <CreateRoom onRoomCreated={handleRoomCreated} />;
     }
@@ -176,7 +182,7 @@ export const App: React.FC = () => {
       <div className="app-container">
         <Header
           onBack={currentRoomId || showMyRooms ? handleBack : undefined}
-          onGoHome={handleGoHome}
+          onGoHome={() => handleGoHome(false)}
           onOpenMyRooms={handleOpenMyRooms}
         />
         <main className="main-content">

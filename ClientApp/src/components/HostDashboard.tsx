@@ -8,7 +8,6 @@ import {
   Sparkles,
   RefreshCw,
   Gift,
-  AlertCircle,
   CheckCircle2,
   Share2,
   MessageCircle,
@@ -45,7 +44,6 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({ roomId, adminToken
 
   // Link copy
   const [copiedLink, setCopiedLink] = useState(false);
-  const [linkType, setLinkType] = useState<'tma' | 'web'>('tma');
 
   // Restrictions
   const [showRestrictions, setShowRestrictions] = useState(false);
@@ -86,18 +84,28 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({ roomId, adminToken
         setRoom(data);
         setErrorMsg(null);
       } catch (err: any) {
-        setErrorMsg(err.message || 'Не вдалося оновити дані кімнати');
+        const msg = err.message || 'Не вдалося оновити дані кімнати';
+        setErrorMsg(msg);
+        if (!room || msg.includes('Недійсний токен') || msg.includes('не знайдено')) {
+          onGoHome?.();
+        }
       } finally {
         setLoading(false);
         if (isManual) setIsRefreshing(false);
       }
     },
-    [roomId, adminToken]
+    [roomId, adminToken, onGoHome, room]
   );
 
   useEffect(() => {
     fetchRoomData();
   }, [fetchRoomData]);
+
+  useEffect(() => {
+    if (!loading && !room) {
+      onGoHome?.();
+    }
+  }, [loading, room, onGoHome]);
 
   // Polling every 4 seconds while collecting
   useEffect(() => {
@@ -110,17 +118,15 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({ roomId, adminToken
     return () => clearInterval(interval);
   }, [room?.status, fetchRoomData]);
 
-  // Generate Telegram Mini App and Web invite links
+  // Generate Telegram Mini App invite link
   const botUsername = tgConfig.botUsername?.replace(/^@/, '').trim();
   const appName = tgConfig.appShortName?.trim() || 'app';
-  const tmaInviteUrl = botUsername
+  const inviteUrl = botUsername
     ? `https://t.me/${botUsername}/${appName}?startapp=${roomId}`
     : '';
-  const webInviteUrl = `${window.location.origin}?tab=online&room=${roomId}`;
-
-  const inviteUrl = linkType === 'tma' && tmaInviteUrl ? tmaInviteUrl : webInviteUrl;
 
   const handleCopyLink = async () => {
+    if (!inviteUrl) return;
     triggerHaptic('light');
     try {
       await navigator.clipboard.writeText(inviteUrl);
@@ -132,6 +138,7 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({ roomId, adminToken
   };
 
   const handleShareTelegram = () => {
+    if (!inviteUrl) return;
     triggerHaptic('light');
     const shareText = `Приєднуйтесь до гри «Таємний Санта» у кімнаті «${room?.title || ''}»! 🎅🎁 Відкривайте додаток та пишіть свої побажання:`;
     openTelegramShare(inviteUrl, shareText);
@@ -243,20 +250,11 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({ roomId, adminToken
     }
   };
 
-  if (loading) {
+  if (loading || !room) {
     return (
       <div className="card loading-card">
         <RefreshCw size={32} className="spin text-gold" />
-        <p>Завантаження даних кімнати...</p>
-      </div>
-    );
-  }
-
-  if (!room) {
-    return (
-      <div className="card alert-error">
-        <AlertCircle size={24} />
-        <p>{errorMsg || 'Не вдалося завантажити інформацію про кімнату'}</p>
+        <p>{!room && !loading ? 'Перенаправлення на головну...' : 'Завантаження даних кімнати...'}</p>
       </div>
     );
   }
@@ -367,49 +365,29 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({ roomId, adminToken
           </div>
 
           <div className="invite-block">
-            <div className="invite-type-tabs" role="tablist">
-              <button
-                type="button"
-                role="tab"
-                aria-selected={linkType === 'tma'}
-                className={`invite-type-tab ${linkType === 'tma' ? 'active' : ''}`}
-                onClick={() => setLinkType('tma')}
-              >
-                📱 Telegram Mini App
-              </button>
-              <button
-                type="button"
-                role="tab"
-                aria-selected={linkType === 'web'}
-                className={`invite-type-tab ${linkType === 'web' ? 'active' : ''}`}
-                onClick={() => setLinkType('web')}
-              >
-                🌐 Веб-посилання (браузер)
-              </button>
-            </div>
-
-            <label className="field-label" htmlFor="invite-url-field">
-              {linkType === 'tma'
-                ? 'Telegram-посилання (відкриває Mini App у Telegram):'
-                : 'Пряме веб-посилання (відкриває в будь-якому браузері):'}
-            </label>
             <div className="invite-link-row">
               <input
                 id="invite-url-field"
                 type="text"
                 readOnly
                 value={inviteUrl}
+                aria-label="Telegram-посилання для запрошення"
                 className="input-text invite-input"
                 onClick={(e) => (e.target as HTMLInputElement).select()}
               />
               <button
                 type="button"
-                className={`btn ${copiedLink ? 'btn-success' : 'btn-secondary'} btn-copy`}
+                className={`btn ${copiedLink ? 'btn-success is-copied' : 'btn-secondary'} btn-copy`}
                 onClick={handleCopyLink}
-                title="Скопіювати посилання"
+                title={copiedLink ? 'Скопійовано!' : 'Скопіювати посилання'}
+                disabled={!inviteUrl}
               >
-                {copiedLink ? <Check size={16} /> : <Copy size={16} />}
-                <span>{copiedLink ? 'Скопійовано!' : 'Копіювати'}</span>
+                <span className="btn-copy-icon">
+                  {copiedLink ? <Check size={16} /> : <Copy size={16} />}
+                </span>
+                <span className="btn-copy-text">
+                  {copiedLink ? 'Скопійовано!' : 'Копіювати'}
+                </span>
               </button>
             </div>
 
@@ -418,6 +396,7 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({ roomId, adminToken
               className="btn btn-primary btn-share-telegram"
               onClick={handleShareTelegram}
               title="Поділитися в Telegram"
+              disabled={!inviteUrl}
             >
               <Share2 size={18} />
               <span>Поділитись у Telegram</span>
