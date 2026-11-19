@@ -2,6 +2,8 @@
 bin/
 obj/
 publish/
+[Tt]est[Rr]esults/
+coveragereport/
 *.user
 *.suo
 .vs/
@@ -23,6 +25,7 @@ Thumbs.db
 [Dd]esktop.ini
 $RECYCLE.BIN/
 *.lnk
+appsettings.json
 appsettings.Development.json
 appsettings.Production.json
 Properties/PublishProfiles

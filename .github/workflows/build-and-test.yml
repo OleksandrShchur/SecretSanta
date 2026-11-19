@@ -1,0 +1,102 @@
+name: Build & Test
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: 'ClientApp/package-lock.json'
+
+      - name: Install Frontend Dependencies
+        run: npm --prefix ClientApp ci
+
+      - name: Restore .NET Dependencies
+        run: dotnet restore SecretSanta.slnx
+
+      - name: Build Solution
+        run: dotnet build SecretSanta.slnx --no-restore --configuration Release
+
+      - name: Run Frontend Tests
+        run: npm --prefix ClientApp test
+
+      - name: Run .NET Tests with Code Coverage
+        run: |
+          dotnet test SecretSanta.slnx --no-build --configuration Release \
+            --collect:"XPlat Code Coverage" \
+            --results-directory ./TestResults
+
+      - name: Install ReportGenerator Tool
+        run: dotnet tool install -g dotnet-reportgenerator-globaltool
+
+      - name: Generate Coverage Report & Badges
+        run: |
+          reportgenerator \
+            -reports:"TestResults/**/coverage.cobertura.xml" \
+            -targetdir:"coveragereport" \
+            -reporttypes:"Badges;TextSummary;MarkdownSummaryGithub" \
+            -classfilters:"-Microsoft.AspNetCore.OpenApi.*;-System.Runtime.*"
+
+      - name: Update Coverage Badge & Job Summary
+        shell: bash
+        run: |
+          mkdir -p .github/badges
+          
+          # Extract Line coverage percentage from Summary.txt
+          COVERAGE=$(grep -m 1 "Line coverage:" coveragereport/Summary.txt | awk '{print $3}' | tr -d '%')
+          INT_COV=${COVERAGE%.*}
+          echo "Overall line coverage is ${COVERAGE}% (${INT_COV}%)"
+          
+          COLOR="red"
+          if [ "$INT_COV" -ge 90 ]; then
+            COLOR="brightgreen"
+          elif [ "$INT_COV" -ge 80 ]; then
+            COLOR="green"
+          elif [ "$INT_COV" -ge 70 ]; then
+            COLOR="yellowgreen"
+          elif [ "$INT_COV" -ge 60 ]; then
+            COLOR="yellow"
+          elif [ "$INT_COV" -ge 50 ]; then
+            COLOR="orange"
+          fi
+          
+          # Copy the appropriate colored shields.io SVG badge
+          cp "coveragereport/badge_shieldsio_linecoverage_${COLOR}.svg" .github/badges/coverage.svg
+          
+          # Create endpoint JSON for shields.io endpoint support
+          echo "{\"schemaVersion\":1,\"label\":\"coverage\",\"message\":\"${COVERAGE}%\",\"color\":\"${COLOR}\"}" > .github/badges/coverage.json
+          
+          # Publish Markdown summary to GitHub Actions Step Summary
+          if [ -f coveragereport/SummaryGithub.md ]; then
+            cat coveragereport/SummaryGithub.md >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Commit and push coverage badge
+        if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore: update code coverage badge [skip ci]"
+          file_pattern: ".github/badges/*"
