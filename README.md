@@ -105,3 +105,43 @@ dotnet run
    - Ендпоінт: `/health` (або `/api/health`).
    - Підтримує HTTP-методи **GET** та **HEAD**, повертає `200 OK` зі статусом `Healthy`.
    - Ідеально для сервісів моніторингу аптайму (UptimeRobot, Better Stack тощо), щоб підтримувати роботу інстансу.
+
+---
+
+## 🧪 Тестування (Testing)
+
+Проєкт повністю покритий автоматичними тестами всіх рівнів:
+
+### 1. Бекенд-тести (.NET 10 xUnit + FluentAssertions + Moq)
+```bash
+# Запуск усіх бекенд тестів (Unit + Integration)
+dotnet test
+
+# Тільки модульні тести
+dotnet test SecretSanta.UnitTests
+
+# Тільки інтеграційні тести API
+dotnet test SecretSanta.IntegrationTests
+```
+- **[SecretSanta.UnitTests](file:///c:/Users/osur1/Documents/personal/IT/pet_projects/SecretSanta/SecretSanta.UnitTests)** (58 тестів):
+  - `SecretSantaAlgorithmTests`: валідація графу та випадкових гамільтонових циклів жеребкування, перевірка циклічності, обробка мінімуму учасників (<3), взаємні обмеження, перевірка неможливих конфігурацій з локалізованими повідомленнями про помилки.
+  - `TelegramServiceTests`: криптографічна валідація HMAC-SHA256 підпису `initData` від Telegram WebApp, надсилання сповіщень, форматування HTML-розмітки, обробка побажань та помилок мережі.
+  - `RoomsControllerUnitTests` & `TelegramControllerUnitTests`: бізнес-логіка створення, керування, жеребкування, перегляду призначень та вебхуків.
+- **[SecretSanta.IntegrationTests](file:///c:/Users/osur1/Documents/personal/IT/pet_projects/SecretSanta/SecretSanta.IntegrationTests)** (10 тестів):
+  - Повний наскрізний життєвий цикл кімнати через `WebApplicationFactory<Program>` та InMemory DB: Створення -> Приєднання учасників -> Обмеження -> Жеребкування -> Отримання підопічного -> Деактивація -> Видалення.
+  - Тестування авторизації через токени адміністратора, вебхуків та `/health` проб.
+
+### 2. UI-тести фронтенду (React 19 + Vitest + React Testing Library)
+```bash
+# Запуск усіх UI тестів
+npm --prefix ClientApp test
+```
+- **[ClientApp UI Tests](file:///c:/Users/osur1/Documents/personal/IT/pet_projects/SecretSanta/ClientApp/src/components/__tests__)** (41 тест):
+  - `OfflineGenerator.test.tsx`: додавання/видалення учасників, валідація дублікатів і порожніх полів, блокування жеребкування при < 3 учасниках, генерація пар, матриця обмежень, копіювання в буфер обміну.
+  - `CreateRoom.test.tsx`: валідація полів кімнати, Telegram defaults, перемикач участі хоста, відправка форми та обробка помилок.
+  - `JoinRoom.test.tsx`: перегляд публічних даних, приєднання нових учасників, статус зареєстрованого учасника з можливістю редагування, відображення результату після жеребкування.
+  - `HostDashboard.test.tsx`: статистика, список учасників, копіювання посилання запрошення, матриця обмежень, запуск жеребкування.
+  - `MyAssignmentCard.test.tsx`: інтерактивна секретна картка (приховано/розкрито), безпека від сторонніх очей, відображення побажань.
+  - `MyRooms.test.tsx`: навігація між кімнатами організатора та учасника.
+  - `NavbarAndHeader.test.tsx` & `App.test.tsx`: маршрутизація за URL-параметрами (`?room=`, `?admin=`, `?view=my-rooms`, `?tab=offline`), перемикання вкладок.
+
