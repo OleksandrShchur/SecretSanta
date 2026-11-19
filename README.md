@@ -1,5 +1,11 @@
 # Secret Santa 🎅 — Telegram Mini App
 
+[![Build](.github/badges/build.svg)](https://github.com/OleksandrShchur/SecretSanta/actions/workflows/build-and-test.yml)
+[![Coverage](.github/badges/coverage.svg)](https://github.com/OleksandrShchur/SecretSanta/actions/workflows/build-and-test.yml)
+[![Tests](https://img.shields.io/badge/tests-109%20passed-brightgreen.svg)](https://github.com/OleksandrShchur/SecretSanta/actions/workflows/build-and-test.yml)
+[![.NET](https://img.shields.io/badge/.NET-10.0-512BD4.svg?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
+[![React](https://img.shields.io/badge/React-19-61DAFB.svg?logo=react&logoColor=black)](https://react.dev/)
+
 Повноцінний сучасний застосунок для організації та проведення новорічного розіграшу **«Таємний Санта»** у форматі **Telegram Mini App (TMA)** без використання email:
 - **Бекенд**: **.NET 10 (ASP.NET Core Web API)**
 - **База даних**: **SQL Server** (LocalDB для локальної розробки, MonsterASP MSSQL для хостингу)
@@ -144,4 +150,20 @@ npm --prefix ClientApp test
   - `MyAssignmentCard.test.tsx`: інтерактивна секретна картка (приховано/розкрито), безпека від сторонніх очей, відображення побажань.
   - `MyRooms.test.tsx`: навігація між кімнатами організатора та учасника.
   - `NavbarAndHeader.test.tsx` & `App.test.tsx`: маршрутизація за URL-параметрами (`?room=`, `?admin=`, `?view=my-rooms`, `?tab=offline`), перемикання вкладок.
+
+### 3. Автоматичний CI та покриття коду (Code Coverage & CI)
+- **Загальне покриття бекенду**: **92.1%** (Line coverage), **79.7%** (Branch coverage), **95%** (Method coverage).
+- Покриття вимірюється автоматично за допомогою **Coverlet** та **ReportGenerator** у GitHub Actions workflow ([.github/workflows/build-and-test.yml](file:///c:/Users/osur1/Documents/personal/IT/pet_projects/SecretSanta/.github/workflows/build-and-test.yml)).
+- Бейдж покриття у шапці репозиторію оновлюється автоматично під час збірки в гілці `master`.
+- Локальна генерація детального HTML-звіту покриття:
+  ```bash
+  # 1. Запуск тестів зі збором покриття
+  dotnet test --collect:"XPlat Code Coverage"
+
+  # 2. Встановлення ReportGenerator (одноразово)
+  dotnet tool install -g dotnet-reportgenerator-globaltool
+
+  # 3. Генерація звіту та бейджів
+  reportgenerator -reports:"**/coverage.cobertura.xml" -targetdir:"coveragereport" -reporttypes:"Html;Badges" -classfilters:"-Microsoft.AspNetCore.OpenApi.*;-System.Runtime.*"
+  ```
 
