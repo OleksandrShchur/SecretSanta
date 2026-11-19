@@ -60,7 +60,7 @@ jobs:
             -reporttypes:"Badges;TextSummary;MarkdownSummaryGithub" \
             -classfilters:"-Microsoft.AspNetCore.OpenApi.*;-System.Runtime.*"
 
-      - name: Update Coverage Badge & Job Summary
+      - name: Update Badges & Job Summary
         shell: bash
         run: |
           mkdir -p .github/badges
@@ -89,14 +89,20 @@ jobs:
           # Create endpoint JSON for shields.io endpoint support
           echo "{\"schemaVersion\":1,\"label\":\"coverage\",\"message\":\"${COVERAGE}%\",\"color\":\"${COLOR}\"}" > .github/badges/coverage.json
           
+          # Update build passing badge
+          cat << 'EOF' > .github/badges/build.svg
+<svg xmlns="http://www.w3.org/2000/svg" width="88" height="20" role="img" aria-label="build: passing"><title>build: passing</title><filter id="blur"><feGaussianBlur stdDeviation="16"/></filter><linearGradient id="s" x2="0" y2="100%"><stop offset="0" stop-color="#bbb" stop-opacity=".1"/><stop offset="1" stop-opacity=".1"/></linearGradient><clipPath id="r"><rect width="88" height="20" rx="3"/></clipPath><g clip-path="url(#r)"><rect width="37" height="20" fill="#555"/><rect x="37" width="51" height="20" fill="#44cc11"/><rect width="88" height="20" fill="url(#s)"/></g><g fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" text-rendering="geometricPrecision" font-size="110"><g transform="scale(.1)"><g aria-hidden="true" fill="#010101"><text x="195" y="150" fill-opacity=".8" filter="url(#blur)" textLength="270">build</text><text x="195" y="150" fill-opacity=".3" textLength="270">build</text></g><text x="195" y="140" textLength="270">build</text></g><g transform="scale(.1)"><g aria-hidden="true" fill="#010101"><text x="615" y="150" fill-opacity=".8" filter="url(#blur)" textLength="410">passing</text><text x="615" y="150" fill-opacity=".3" textLength="410">passing</text></g><text x="615" y="140" textLength="410">passing</text></g></g></svg>
+EOF
+          echo "{\"schemaVersion\":1,\"label\":\"build\",\"message\":\"passing\",\"color\":\"brightgreen\"}" > .github/badges/build.json
+
           # Publish Markdown summary to GitHub Actions Step Summary
           if [ -f coveragereport/SummaryGithub.md ]; then
             cat coveragereport/SummaryGithub.md >> $GITHUB_STEP_SUMMARY
           fi
 
-      - name: Commit and push coverage badge
+      - name: Commit and push badges
         if: github.ref == 'refs/heads/master' && github.event_name == 'push'
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "chore: update code coverage badge [skip ci]"
+          commit_message: "chore: update build and coverage badges [skip ci]"
           file_pattern: ".github/badges/*"

@@ -1,6 +1,6 @@
 # Secret Santa 🎅 — Telegram Mini App
 
-[![Build & Test](https://github.com/OleksandrShchur/SecretSanta/actions/workflows/build-and-test.yml/badge.svg)](https://github.com/OleksandrShchur/SecretSanta/actions/workflows/build-and-test.yml)
+[![Build](.github/badges/build.svg)](https://github.com/OleksandrShchur/SecretSanta/actions/workflows/build-and-test.yml)
 [![Coverage](.github/badges/coverage.svg)](https://github.com/OleksandrShchur/SecretSanta/actions/workflows/build-and-test.yml)
 [![Tests](https://img.shields.io/badge/tests-109%20passed-brightgreen.svg)](https://github.com/OleksandrShchur/SecretSanta/actions/workflows/build-and-test.yml)
 [![.NET](https://img.shields.io/badge/.NET-10.0-512BD4.svg?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
