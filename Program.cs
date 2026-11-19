@@ -9,7 +9,16 @@ string connectionString = builder.Configuration.GetConnectionString("DefaultConn
     ?? "Server=(localdb)\\mssqllocaldb;Database=SecretSantaDb;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True";
 
 builder.Services.AddDbContext<SecretSantaDbContext>(options =>
-    options.UseSqlServer(connectionString));
+{
+    if (builder.Configuration.GetValue<bool>("UseInMemoryDatabase"))
+    {
+        options.UseInMemoryDatabase(builder.Configuration["InMemoryDatabaseName"] ?? "SecretSantaTestDb");
+    }
+    else
+    {
+        options.UseSqlServer(connectionString);
+    }
+});
 
 // 2. Сервіси додатку
 builder.Services.AddHttpClient();
@@ -42,22 +51,25 @@ using (var scope = app.Services.CreateScope())
         db.Database.EnsureCreated();
 
         // Перевіряємо, чи база містить застарілі колонки (HostEmail замість HostTelegramId)
-        var conn = db.Database.GetDbConnection();
-        conn.Open();
-        using var cmd = conn.CreateCommand();
-        cmd.CommandText = @"
-            IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'Rooms' AND COLUMN_NAME = 'HostEmail')
-            BEGIN
-                DROP TABLE IF EXISTS Assignments;
-                DROP TABLE IF EXISTS Restrictions;
-                DROP TABLE IF EXISTS Participants;
-                DROP TABLE IF EXISTS Rooms;
-            END
-        ";
-        cmd.ExecuteNonQuery();
-        conn.Close();
+        if (db.Database.IsSqlServer())
+        {
+            var conn = db.Database.GetDbConnection();
+            conn.Open();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = @"
+                IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'Rooms' AND COLUMN_NAME = 'HostEmail')
+                BEGIN
+                    DROP TABLE IF EXISTS Assignments;
+                    DROP TABLE IF EXISTS Restrictions;
+                    DROP TABLE IF EXISTS Participants;
+                    DROP TABLE IF EXISTS Rooms;
+                END
+            ";
+            cmd.ExecuteNonQuery();
+            conn.Close();
 
-        db.Database.EnsureCreated();
+            db.Database.EnsureCreated();
+        }
     }
     catch (Exception ex)
     {
@@ -86,3 +98,5 @@ app.MapControllers();
 app.MapFallbackToFile("index.html");
 
 app.Run();
+
+public partial class Program { }
